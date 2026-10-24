@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout del repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configurar Terraform CLI
         uses: hashicorp/setup-terraform@v4
