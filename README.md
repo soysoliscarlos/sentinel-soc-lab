@@ -1,5 +1,7 @@
 # Laboratorio SOC L2: Terraform para Azure
 
+> **Repositorio oficial de GitHub:** [https://github.com/soysoliscarlos/sentinel-soc-lab](https://github.com/soysoliscarlos/sentinel-soc-lab)
+
 Guía operativa propuesta: [cobertura de Sentinel y pruebas controladas](../Research/Sentinel%20-%20Cobertura%20y%20pruebas%20del%20laboratorio.md), con fuentes pendientes, consultas KQL y ejemplos de incidentes. No añade infraestructura ni ejecuta pruebas sobre Azure.
 
 ## Alcance confirmado
@@ -23,7 +25,7 @@ Código de infraestructura para un laboratorio en `eastus2`. El despliegue base 
 
 Terraform administra infraestructura, identidades, roles, agentes AMA y recolección. Cloud-init garantiza `rsyslog` en Ubuntu. Una extensión Custom Script configura auditoría de logon/procesos Windows mediante [Configure-WindowsAudit.ps1](scripts/Configure-WindowsAudit.ps1), pendiente de aplicar. [Ansible invocado desde Terraform](Ansible/README.md) instala IIS y un bosque AD `lab.example.test` en Windows, y Apache/PostgreSQL en Ubuntu. `enable_ansible` conserva `false` como valor por defecto, pero **está activado en las entradas del laboratorio; no se ejecutó contra Azure en este cambio**. Su preparación SSH se integra en la misma extensión Windows, preservando la auditoría.
 
-Tras instalar y verificar los servicios, Ansible configura sus logs y Terraform amplía las DCR existentes hacia el mismo workspace: IIS W3C, auditoría/canales AD DS, archivos Apache por rsyslog y PostgreSQL por Syslog. **SQL completo autorizado mediante `log_statement='all'`: puede registrar secretos y datos personales y aumentar mucho la ingesta.** No se deshabilitan la cuota ni la retención existentes; revisar [rutas, límites y consultas de verificación](Ansible/README.md#telemetría-y-referencias). Quedan fuera Sysmon, las políticas de auditoría no declaradas, Defender, aplicaciones, workloads Kubernetes, reglas de detección y simulaciones.
+Tras instalar y verificar los servicios, Ansible configura sus logs y Terraform amplía las DCR existentes hacia el mismo workspace: IIS W3C, auditoría/canales AD DS, archivos Apache por rsyslog y PostgreSQL por Syslog. **SQL completo autorizado mediante `log_statement='all'`: puede registrar secretos y datos personales y aumentar mucho la ingesta.** No se deshabilitan la cuota ni la retención existentes; revisar [rutas, límites y consultas de verificación](Ansible/README.md#telemetría-y-referencias). Quedan fuera Sysmon, las políticas de auditoría no declaradas, aplicaciones, workloads Kubernetes y simulaciones. Defender for Servers, las reglas de detección y las hunting queries son opt-in y se describen en la sección «Contenido de Sentinel».
 
 No se crean conectores heredados de Azure Activity ni agentes MMA/OMS en las VM. El bloque Terraform `oms_agent` es el nombre conservado por AzureRM para el complemento de monitoreo AKS con autenticación por identidad administrada; se configura además su DCR y asociación explícita. El onboarding no instala soluciones de Content Hub ni configura conectores de Entra/Microsoft 365.
 
@@ -77,7 +79,7 @@ Además del onboarding, el repositorio puede desplegar contenido de Sentinel que
 
 | Interruptor | Defecto | Qué crea | Requisitos |
 | --- | --- | --- | --- |
-| `enable_sentinel_analytics` | `false` (activado en `terraform.tfvars`) | 7 reglas analíticas programadas `LAB-Pxx`, un workbook y una regla de automatización | Onboarding de Sentinel |
+| `enable_sentinel_analytics` | `false` (activado en `terraform.tfvars`) | 13 reglas analíticas programadas `LAB-Pxx`, un workbook, 2 hunting queries (HUNT-01/HUNT-02, en `sentinel_hunting.tf`) y una regla de automatización | Onboarding de Sentinel |
 | `enable_sentinel_playbooks` | `false` (activado en `terraform.tfvars`) | 2 playbooks (Logic Apps) y sus asignaciones de rol | Requiere `enable_sentinel_analytics`; RP `Microsoft.Logic` y `Microsoft.Web` |
 | `enable_sentinel_notebooks` | `false` (activado en `terraform.tfvars`) | Workspace de Azure ML (storage, Key Vault, App Insights) y una compute instance | RP `Microsoft.MachineLearningServices` |
 
@@ -129,7 +131,12 @@ La regla de automatización `LAB - Etiquetar y enriquecer incidentes del taller`
 
 [sentinel_notebooks.tf](sentinel_notebooks.tf) crea un workspace de Azure ML con su storage, Key Vault y Application Insights, más una compute instance (`Standard_DS2_v2` por defecto, variable `sentinel_notebook_compute_size`). La identidad administrada de la compute instance recibe **Log Analytics Reader** sobre `soc-l2-law` para que los notebooks consulten con `DefaultAzureCredential`.
 
-Los notebooks ([notebooks/SOC-L2-Eventos.ipynb](notebooks/SOC-L2-Eventos.ipynb) y [notebooks/SOC-L2-Caza.ipynb](notebooks/SOC-L2-Caza.ipynb)) **no se suben automáticamente**: tras el apply hay que cargarlos a mano en **Azure ML Studio > Notebooks** o desde **Sentinel > Notebooks**, usando los archivos del repositorio.
+Los tres notebooks ([SOC-L2-Eventos.ipynb](notebooks/SOC-L2-Eventos.ipynb), [SOC-L2-Caza.ipynb](notebooks/SOC-L2-Caza.ipynb) y [SOC-L2-Analisis-Logs.ipynb](notebooks/SOC-L2-Analisis-Logs.ipynb)) se suben automáticamente al file share del workspace mediante `terraform_data.upload_notebooks` (que usa `az storage file upload`, por lo que requiere Azure CLI autenticado). Si la subida falla, pueden cargarse a mano en **Azure ML Studio > Notebooks**.
+
+### Defender for Servers y hunting queries
+
+- [defender.tf](defender.tf): con `enable_defender_for_servers` activa Defender for Servers (subplan P1/P2 según variable), la integración WDATP (`azurerm_security_center_setting`) y las extensiones MDE.Windows / MDE.Linux. **El alcance es toda la suscripción y genera costo**; revisar antes de aplicar.
+- [sentinel_hunting.tf](sentinel_hunting.tf): 2 saved searches (HUNT-01 y HUNT-02) para caza manual, condicionadas a `enable_sentinel_analytics`.
 
 > **Costo:** la compute instance **factura por hora mientras está encendida** y no tiene apagado automático en el provider. Detenerla manualmente en el portal o programar un apagado cuando no se use. Las cuotas de la familia de VM deben validarse antes de cambiar el tamaño.
 
