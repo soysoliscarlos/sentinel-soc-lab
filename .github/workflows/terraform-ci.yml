@@ -1,0 +1,42 @@
+name: "Terraform CI - Lint & Validate"
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - "**.tf"
+      - ".github/workflows/**"
+  pull_request:
+    branches: [ "main", "master" ]
+    paths:
+      - "**.tf"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: "Validar Terraform"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.5"
+
+      - name: Verificar formato (terraform fmt)
+        id: fmt
+        run: terraform fmt -check -diff
+
+      - name: Inicializar configuración sin backend remoto
+        id: init
+        run: terraform init -backend=false
+
+      - name: Validar sintaxis y configuración (terraform validate)
+        id: validate
+        run: terraform validate

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Preguntas y Ayuda Comunitaria
+    url: https://github.com
+    about: Usa la sección de discusiones o revisa SUPPORT.md para dudas conceptuales y de uso.
+  - name: Reporte Privado de Vulnerabilidades
+    url: https://github.com
+    about: Si encontraste una vulnerabilidad de seguridad o fuga de credenciales, revisa SECURITY.md antes de reportar.

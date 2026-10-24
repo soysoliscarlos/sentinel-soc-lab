@@ -1,0 +1,21 @@
+# Auto-detect text files and perform LF normalization on checkin
+* text=auto
+
+# Archivos de código y configuración con saltos de línea LF obligatorios
+*.tf text eol=lf
+*.tfvars text eol=lf
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+
+# Scripts de PowerShell en Windows
+*.ps1 text eol=crlf
+
+# Archivos binarios
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+*.ico binary

@@ -1,0 +1,69 @@
+name: Reporte de Error (Bug Report)
+description: Reporta un error o fallo en el código de Terraform, telemetría o despliegue.
+title: "[BUG]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por tomarte el tiempo de reportar este problema en el laboratorio SOC L2.
+        Por favor, asegúrate de no incluir contraseñas, tokens de Azure o información confidencial.
+  - type: input
+    id: terraform_version
+    attributes:
+      label: Versión de Terraform
+      description: Ejecuta `terraform version` y pega la versión aquí.
+      placeholder: "ej. Terraform v1.7.5"
+    validations:
+      required: true
+  - type: input
+    id: azurerm_version
+    attributes:
+      label: Versión del proveedor azurerm
+      placeholder: "ej. hashicorp/azurerm ~> 3.90"
+    validations:
+      required: false
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción del problema
+      description: Explica de forma clara y concisa qué ocurrió.
+      placeholder: "Al ejecutar terraform plan/apply ocurre el siguiente error..."
+    validations:
+      required: true
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: Pasos para reproducir el comportamiento
+      description: Describe paso a paso cómo replicar el fallo.
+      value: |
+        1. Configurar variables en terraform.tfvars
+        2. Ejecutar 'terraform init'
+        3. Ejecutar 'terraform plan' o 'terraform apply'
+        4. Observar el error
+    validations:
+      required: true
+  - type: textarea
+    id: logs_or_output
+    attributes:
+      label: Salida de terminal / Logs de error
+      description: Copia y pega las líneas relevantes de error de Terraform o Azure.
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: Comportamiento esperado
+      description: Qué esperabas que sucediera.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: Verificaciones previas
+      options:
+        - label: He verificado que no estoy incluyendo secretos ni información confidencial en los logs.
+          required: true
+        - label: He buscado en los Issues existentes y no encontré un reporte duplicado.
+          required: true

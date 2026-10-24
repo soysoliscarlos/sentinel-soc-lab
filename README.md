@@ -1,6 +1,9 @@
 # Azure SOC L2 Cyber Range: Threat Detection & Incident Response con IaC
 ### Laboratorio Efímero de Ciberseguridad Cloud con Terraform, Ansible y Microsoft Sentinel
 
+[![Licencia: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![Terraform CI](https://github.com/soysoliscarlos/sentinel-soc-lab/actions/workflows/terraform-ci.yml/badge.svg)](.github/workflows/terraform-ci.yml)
+
 > **Repositorio oficial de GitHub:** [https://github.com/soysoliscarlos/sentinel-soc-lab](https://github.com/soysoliscarlos/sentinel-soc-lab)
 
 > **Presentación:** este repositorio incluye las diapositivas de la ponencia en PDF: [Bootcamp Analista SOC Nivel 2 2026 - Comunidad DOJO.pdf](slides/Bootcamp%20Analista%20SOC%20Nivel%202%202026%20-%20Comunidad%20DOJO.pdf).
@@ -552,3 +555,13 @@ La destrucción es **permanente** por configuración del bloque `features` en [p
 - [Categorías admitidas en diagnósticos AKS, incluida guard](https://learn.microsoft.com/azure/azure-monitor/reference/supported-logs/microsoft-containerservice-managedclusters-logs).
 - [Auditoría de procesos y exposición de argumentos 4688](https://learn.microsoft.com/windows-server/identity/ad-ds/manage/component-updates/command-line-process-auditing).
 - [auditpol: selección de subcategorías por GUID y permisos](https://learn.microsoft.com/windows-server/administration/windows-commands/auditpol-set).
+
+## Licencia y Comunidad
+
+Este proyecto está distribuido bajo la licencia **GNU General Public License v3.0 (GPLv3)**. Consulta el archivo [LICENSE](LICENSE) para conocer todos los derechos y términos.
+
+- [Guía de Contribución](CONTRIBUTING.md)
+- [Código de Conducta](CODE_OF_CONDUCT.md)
+- [Política de Seguridad y Reporte de Vulnerabilidades](SECURITY.md)
+- [Canales de Soporte y Ayuda](SUPPORT.md)
+- [Registro de Cambios](CHANGELOG.md)

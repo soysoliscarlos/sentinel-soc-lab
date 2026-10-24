@@ -1,0 +1,50 @@
+name: Solicitud de Característica (Feature Request)
+description: Propón una nueva funcionalidad, regla analítica, recurso de Azure o integración para el laboratorio.
+title: "[FEAT]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ¡Gracias por tus ideas para hacer evolucionar el laboratorio de SOC Nivel 2 en Azure!
+  - type: textarea
+    id: problem_statement
+    attributes:
+      label: ¿Qué necesidad o caso de uso aborda esta solicitud?
+      description: Describe el escenario defensivo, regla de detección o capacidad requerida.
+      placeholder: "Actualmente no contamos con una regla analítica para detectar movimientos laterales mediante Pass-the-Hash..."
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Solución o implementación propuesta
+      description: Explica cómo imaginas que debería implementarse (recursos Terraform, regla KQL, automatización en Sentinel, etc.).
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives_considered
+    attributes:
+      label: Alternativas consideradas
+      description: ¿Has valorado otras alternativas o soluciones provisionales?
+    validations:
+      required: false
+  - type: dropdown
+    id: component_affected
+    attributes:
+      label: Componente principal afectado
+      options:
+        - Sentinel (Reglas analíticas, Hunting, Playbooks)
+        - Cómputo y Máquinas Virtuales (Windows / Linux)
+        - Redes y Seguridad perimetral (VNet, NSG, Bastion)
+        - Contenedores y Microservicios (AKS / App Service)
+        - Ingestión y Telemetría (Sysmon, DCR, AMA)
+        - Documentación y Guías
+    validations:
+      required: true
+  - type: checkboxes
+    id: contribution_interest
+    attributes:
+      label: Disposición a colaborar
+      options:
+        - label: Me gustaría colaborar o enviar un Pull Request con la implementación.
