@@ -1,0 +1,111 @@
+---
+- name: Asegurar rsyslog para la ruta de ingesta de AMA
+  ansible.builtin.apt:
+    name: rsyslog
+    state: present
+
+- name: Mantener logs de acceso y errores del sitio Apache del laboratorio
+  ansible.builtin.lineinfile:
+    path: /etc/apache2/sites-available/000-default.conf
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    insertbefore: '</VirtualHost>'
+  loop:
+    - regexp: '^\s*CustomLog\s+'
+      line: '    CustomLog ${APACHE_LOG_DIR}/access.log combined'
+    - regexp: '^\s*ErrorLog\s+'
+      line: '    ErrorLog ${APACHE_LOG_DIR}/error.log'
+  notify: Recargar Apache
+
+- name: Verificar configuracion Apache antes de recargar
+  ansible.builtin.command: apache2ctl configtest
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Permitir a rsyslog leer archivos del grupo adm
+  ansible.builtin.user:
+    name: syslog
+    groups: adm
+    append: true
+  notify: Reiniciar rsyslog
+
+- name: Instalar lector de logs Apache para Syslog local6
+  ansible.builtin.copy:
+    src: files/30-soc-apache.conf
+    dest: /etc/rsyslog.d/30-soc-apache.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reiniciar rsyslog
+
+- name: Validar configuracion completa de rsyslog antes de reiniciar
+  ansible.builtin.command: rsyslogd -N1
+  changed_when: false
+  when: not ansible_check_mode
+
+- name: Habilitar rsyslog
+  ansible.builtin.service:
+    name: rsyslog
+    enabled: true
+    state: started
+
+- name: Activar logs PostgreSQL con sentencias SQL completas autorizadas
+  ansible.builtin.blockinfile:
+    path: "{{ pg_config.stdout | trim }}"
+    marker: "# {mark} SOC LAB LOGGING"
+    block: |
+      log_destination = 'stderr,syslog'
+      syslog_facility = 'LOCAL5'
+      syslog_ident = 'postgres-soc'
+      syslog_sequence_numbers = on
+      syslog_split_messages = on
+      log_connections = on
+      log_disconnections = on
+      log_statement = 'all'
+      log_min_messages = warning
+      log_min_error_statement = error
+      log_line_prefix = '%m [%p] user=%u db=%d app=%a client=%h '
+  notify: Reiniciar PostgreSQL
+  when: not ansible_check_mode
+
+- name: Comprobar que PostgreSQL acepta todos los valores del archivo
+  ansible.builtin.command:
+    argv:
+      - psql
+      - -At
+      - -c
+      - SELECT count(*) FROM pg_file_settings WHERE error IS NOT NULL
+  become_user: postgres
+  register: pg_file_errors
+  changed_when: false
+  failed_when: pg_file_errors.rc != 0 or pg_file_errors.stdout | trim != '0'
+  when: not ansible_check_mode
+
+- name: Aplicar configuracion antes de las comprobaciones de logs
+  ansible.builtin.meta: flush_handlers
+
+- name: Verificar configuracion activa de logs PostgreSQL
+  ansible.builtin.command:
+    argv:
+      - psql
+      - -At
+      - -c
+      - >-
+        SELECT current_setting('log_destination') = 'stderr,syslog'
+        AND current_setting('syslog_facility') = 'local5'
+        AND current_setting('syslog_ident') = 'postgres-soc'
+        AND current_setting('log_connections') = 'on'
+        AND current_setting('log_disconnections') = 'on'
+        AND current_setting('log_statement') = 'all'
+        AND current_setting('log_min_error_statement') = 'error'
+  become_user: postgres
+  register: pg_logging
+  changed_when: false
+  failed_when: pg_logging.rc != 0 or pg_logging.stdout | trim != 't'
+  when: not ansible_check_mode
+
+- name: Verificar Apache despues de configurar sus logs
+  ansible.builtin.uri:
+    url: http://127.0.0.1/
+    status_code: 200
+  when: not ansible_check_mode

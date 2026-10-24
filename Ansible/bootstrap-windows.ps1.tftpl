@@ -1,0 +1,33 @@
+$ErrorActionPreference = 'Stop'
+$capability = Get-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+if ($capability.State -ne 'Installed') {
+    $result = Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+    if ($result.RestartNeeded) {
+        throw 'OpenSSH requiere reinicio. Reinicie Windows y vuelva a aplicar Terraform.'
+    }
+}
+
+New-Item -Path HKLM:\SOFTWARE\OpenSSH -Force | Out-Null
+New-ItemProperty -Path HKLM:\SOFTWARE\OpenSSH -Name DefaultShell -Value 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -PropertyType String -Force | Out-Null
+Set-Service -Name sshd -StartupType Automatic
+Start-Service sshd
+
+$keys = 'C:\ProgramData\ssh\administrators_authorized_keys'
+$publicKey = '${public_key}'
+if (!(Test-Path $keys) -or !(Get-Content $keys | Where-Object { $_ -eq $publicKey })) {
+    Add-Content -Path $keys -Value $publicKey -Encoding ascii
+}
+icacls.exe $keys /inheritance:r /grant:r '*S-1-5-18:F' '*S-1-5-32-544:F' | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'No se pudieron restringir los permisos de la clave SSH.' }
+
+$config = 'C:\ProgramData\ssh\sshd_config'
+$content = Get-Content $config -Raw
+$content = [regex]::Replace($content, '(?m)^#?PasswordAuthentication\s+.*$', 'PasswordAuthentication no')
+if ($content -notmatch '(?m)^PasswordAuthentication no\r?$') {
+    $content = "PasswordAuthentication no`r`n" + $content
+}
+Set-Content -Path $config -Value $content -Encoding ascii
+& 'C:\Windows\System32\OpenSSH\sshd.exe' -t
+if ($LASTEXITCODE -ne 0) { throw 'La configuracion de sshd no es valida.' }
+Get-NetFirewallRule -Name OpenSSH-Server-In-TCP | Set-NetFirewallRule -Enabled True -RemoteAddress '${admin_cidr}'
+Restart-Service sshd

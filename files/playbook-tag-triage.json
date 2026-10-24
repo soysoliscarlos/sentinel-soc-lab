@@ -1,0 +1,116 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "playbookName": {
+      "type": "string",
+      "metadata": { "description": "Nombre del Logic App (playbook de Sentinel)." }
+    },
+    "location": {
+      "type": "string",
+      "metadata": { "description": "Region del playbook y su conexion." }
+    },
+    "sentinelApiId": {
+      "type": "string",
+      "metadata": { "description": "Resource ID del managed API azuresentinel en la region." }
+    }
+  },
+  "variables": {
+    "connectionName": "[concat(parameters('playbookName'), '-azuresentinel')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "[variables('connectionName')]",
+      "location": "[parameters('location')]",
+      "kind": "V1",
+      "properties": {
+        "displayName": "[variables('connectionName')]",
+        "customParameterValues": {},
+        "parameterValueType": "Alternative",
+        "api": { "id": "[parameters('sentinelApiId')]" }
+      }
+    },
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2017-07-01",
+      "name": "[parameters('playbookName')]",
+      "location": "[parameters('location')]",
+      "identity": { "type": "SystemAssigned" },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/connections', variables('connectionName'))]"
+      ],
+      "tags": { "LogicAppsCategory": "security", "hidden-SentinelTemplateName": "SOC-L2-Etiquetar" },
+      "properties": {
+        "state": "Enabled",
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "$connections": { "type": "Object", "defaultValue": {} }
+          },
+          "triggers": {
+            "Microsoft_Sentinel_incident": {
+              "type": "ApiConnectionWebhook",
+              "inputs": {
+                "body": { "callback_url": "@{listCallbackUrl()}" },
+                "host": {
+                  "connection": { "name": "@parameters('$connections')['azuresentinel']['connectionId']" }
+                },
+                "path": "/incident-creation"
+              }
+            }
+          },
+          "actions": {
+            "Actualizar_incidente": {
+              "type": "ApiConnection",
+              "inputs": {
+                "host": {
+                  "connection": { "name": "@parameters('$connections')['azuresentinel']['connectionId']" }
+                },
+                "method": "put",
+                "path": "/Incidents",
+                "body": {
+                  "incidentArmId": "@triggerBody()?['object']?['id']",
+                  "status": "Active",
+                  "labels": [
+                    { "labelName": "SOC-L2-Lab" },
+                    { "labelName": "Taller" }
+                  ],
+                  "tagsToAdd": {
+                    "TagsToAdd": [ { "Tag": "SOC-L2-Lab" } ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": {
+          "$connections": {
+            "value": {
+              "azuresentinel": {
+                "connectionId": "[resourceId('Microsoft.Web/connections', variables('connectionName'))]",
+                "connectionName": "[variables('connectionName')]",
+                "id": "[parameters('sentinelApiId')]",
+                "connectionProperties": {
+                  "authentication": { "type": "ManagedServiceIdentity" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "logicAppResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Logic/workflows', parameters('playbookName'))]"
+    },
+    "principalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Logic/workflows', parameters('playbookName')), '2017-07-01', 'Full').identity.principalId]"
+    }
+  }
+}

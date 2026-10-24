@@ -1,0 +1,180 @@
+---
+- name: Instalar Apache y PostgreSQL en Ubuntu
+  hosts: linux
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Comprobar la plataforma soportada
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.distribution == 'Ubuntu'
+          - ansible_facts.distribution_version == '22.04'
+        fail_msg: Este playbook requiere la Ubuntu 22.04 definida en Terraform.
+
+    - name: Esperar a que cloud-init termine
+      ansible.builtin.command: cloud-init status --wait
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Instalar servicios y permisos para tareas como postgres
+      ansible.builtin.apt:
+        name:
+          - apache2
+          - postgresql
+          - postgresql-client
+          - acl
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+        lock_timeout: 300
+
+    - name: Habilitar Apache y PostgreSQL
+      ansible.builtin.service:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+      loop:
+        - apache2
+        - postgresql
+
+    - name: Consultar la configuracion del cluster PostgreSQL
+      ansible.builtin.command:
+        argv: [psql, -At, -c, SHOW config_file]
+      become_user: postgres
+      register: pg_config
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Limitar PostgreSQL a conexiones locales
+      ansible.builtin.lineinfile:
+        path: "{{ pg_config.stdout | trim }}"
+        regexp: "^#?listen_addresses\\s*="
+        line: "listen_addresses = 'localhost'"
+      notify: Reiniciar PostgreSQL
+      when: not ansible_check_mode
+
+    - name: Aplicar cambios antes de verificar
+      ansible.builtin.meta: flush_handlers
+
+    - name: Verificar Apache localmente
+      ansible.builtin.uri:
+        url: http://127.0.0.1/
+        status_code: 200
+      when: not ansible_check_mode
+
+    - name: Verificar que PostgreSQL acepta conexiones
+      ansible.builtin.command: pg_isready
+      become_user: postgres
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Verificar las interfaces reales de PostgreSQL
+      ansible.builtin.command:
+        argv: [psql, -At, -c, SHOW listen_addresses]
+      become_user: postgres
+      register: pg_listen
+      changed_when: false
+      failed_when: pg_listen.rc != 0 or pg_listen.stdout | trim != 'localhost'
+      when: not ansible_check_mode
+
+    - name: Configurar logs despues de instalar y verificar los servicios Linux
+      ansible.builtin.import_tasks: linux-logging.yml
+
+  handlers:
+    - name: Reiniciar PostgreSQL
+      ansible.builtin.service:
+        name: postgresql
+        state: restarted
+
+    - name: Recargar Apache
+      ansible.builtin.service:
+        name: apache2
+        state: reloaded
+
+    - name: Reiniciar rsyslog
+      ansible.builtin.service:
+        name: rsyslog
+        state: restarted
+
+- name: Instalar IIS y crear el controlador de dominio del laboratorio
+  hosts: windows
+  gather_facts: false
+  become: true
+  become_method: runas
+  become_user: SYSTEM
+  tasks:
+    - name: Esperar conectividad SSH Windows
+      ansible.builtin.wait_for_connection:
+        timeout: 600
+
+    - name: Instalar IIS y herramientas administrativas
+      ansible.windows.win_feature:
+        name:
+          - Web-Server
+          - Web-Http-Logging
+          - AD-Domain-Services
+        include_management_tools: true
+        state: present
+      register: windows_features
+
+    - name: Reiniciar si lo requieren los roles
+      ansible.windows.win_reboot:
+        reboot_timeout: 1200
+      when: windows_features.reboot_required
+
+    - name: Crear bosque AD y reiniciar cuando sea necesario
+      microsoft.ad.domain:
+        dns_domain_name: "{{ lab_domain_name }}"
+        domain_netbios_name: "{{ lab_domain_netbios }}"
+        safe_mode_password: "{{ lookup('ansible.builtin.env', 'SOC_DSRM_PASSWORD') }}"
+        install_dns: true
+        reboot: true
+        reboot_timeout: 1200
+
+    - name: Habilitar IIS
+      ansible.windows.win_service:
+        name: W3SVC
+        state: started
+        start_mode: auto
+
+    - name: Permitir HTTP en el firewall del SO
+      community.windows.win_firewall_rule:
+        name: SOC Lab IIS HTTP
+        localport: '80'
+        protocol: tcp
+        direction: in
+        action: allow
+        enabled: true
+        state: present
+
+    - name: Verificar IIS localmente
+      ansible.windows.win_uri:
+        url: http://127.0.0.1/
+        status_code: 200
+      when: not ansible_check_mode
+
+    - name: Verificar dominio y servicios AD
+      ansible.windows.win_powershell:
+        script: |
+          $Ansible.Changed = $false
+          $domain = Get-ADDomain -ErrorAction Stop
+          if ($domain.DNSRoot -ne '{{ lab_domain_name }}') {
+              throw 'El dominio creado no coincide con el solicitado.'
+          }
+          foreach ($name in @('NTDS', 'DNS', 'Netlogon', 'W3SVC')) {
+              if ((Get-Service $name -ErrorAction Stop).Status -ne 'Running') {
+                  throw "El servicio $name no esta activo."
+              }
+          }
+          Resolve-DnsName -Name '_ldap._tcp.dc._msdcs.{{ lab_domain_name }}' -Type SRV -ErrorAction Stop
+      when: not ansible_check_mode
+
+    - name: Configurar logs IIS y AD DS despues de la promocion del dominio
+      ansible.windows.win_powershell:
+        script: "{{ lookup('ansible.builtin.file', playbook_dir ~ '/files/Configure-ServiceLogging.ps1') }}"
+
+    - name: Verificar HTTP despues de activar logs IIS
+      ansible.windows.win_uri:
+        url: http://127.0.0.1/
+        status_code: 200
+      when: not ansible_check_mode

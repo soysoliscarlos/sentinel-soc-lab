@@ -1,0 +1,221 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## SOC L2 Lab — Eventos de seguridad generados\nVisualiza la actividad benigna marcada `SOC-L2-Pxx` que produce `Invoke-SocLabLogGeneration.ps1`. Usa el selector de tiempo para ajustar la ventana. Cada panel corresponde a una prueba de la guía de cobertura."
+      },
+      "name": "titulo"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "rango",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "label": "Rango de tiempo",
+            "type": 4,
+            "value": { "durationMs": 86400000 },
+            "typeSettings": {
+              "selectableValues": [
+                { "durationMs": 3600000 },
+                { "durationMs": 14400000 },
+                { "durationMs": 43200000 },
+                { "durationMs": 86400000 },
+                { "durationMs": 604800000 }
+              ]
+            }
+          }
+        ]
+      },
+      "name": "parametros"
+    },
+    {
+      "type": 1,
+      "content": { "json": "### Resumen de marcadores SOC-L2 por tabla" },
+      "name": "texto-resumen"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let win = SecurityEvent | where TimeGenerated {TimeRange} | where tostring(EventID) in ('4625','4688','4720','4722','4724','4725','4726','4727','4728','4729','4730','4732','4733','4738','4776') and (CommandLine has 'SOC-L2' or TargetUserName startswith 'soc-l2-p02' or TargetUserName startswith 'SOCp15' or TargetUserName startswith 'SOCg15' or MemberName has 'SOCp15') | summarize Eventos = count() by Tabla = 'SecurityEvent (Windows)';\nlet evt = Event | where TimeGenerated {TimeRange} | where RenderedDescription has 'SOC-L2-P14' | summarize Eventos = count() by Tabla = 'Event (Application)';\nlet sys = Syslog | where TimeGenerated {TimeRange} | where SyslogMessage has 'SOC-L2-P04' or (ProcessName in ('sshd','su') and SyslogMessage has 'socp04') or (Facility == 'local5' and SyslogMessage has 'soc_l2_p13') or (Facility == 'local6' and SyslogMessage has 'SOC-L2-P11') | summarize Eventos = count() by Tabla = 'Syslog (Linux/Apache/PgSQL)';\nlet iis = W3CIISLog | where TimeGenerated {TimeRange} | where csUriStem has 'SOC-L2-P12' or csUserAgent has 'SOC-L2-Lab' | summarize Eventos = count() by Tabla = 'W3CIISLog (IIS)';\nlet app = AppServiceHTTPLogs | where TimeGenerated {TimeRange} | where UserAgent startswith 'SOC-L2-Lab' | summarize Eventos = count() by Tabla = 'AppServiceHTTPLogs';\nlet kv = AZKVAuditLogs | where TimeGenerated {TimeRange} | where RequestUri has 'soc-l2-p07' or OperationName has 'Secret' | summarize Eventos = count() by Tabla = 'AZKVAuditLogs (Key Vault)';\nlet aks = AKSAuditAdmin | where TimeGenerated {TimeRange} | where RequestUri has 'soc-l2-p08' | summarize Eventos = count() by Tabla = 'AKSAuditAdmin';\nlet act = AzureActivity | where TimeGenerated {TimeRange} | where OperationNameValue has 'RUNCOMMAND' or (OperationNameValue has 'tags' and ActivityStatusValue == 'Success') | summarize Eventos = count() by Tabla = 'AzureActivity';\nunion win, evt, sys, iis, app, kv, aks, act | sort by Eventos desc",
+        "size": 1,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "barchart"
+      },
+      "name": "resumen-tablas"
+    },
+    {
+      "type": 1,
+      "content": { "json": "### P02 — Fallos de autenticación Windows (4625)" },
+      "name": "texto-p02"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SecurityEvent\n| where TimeGenerated {TimeRange}\n| where EventID == 4625 and TargetUserName startswith 'soc-l2-p02'\n| summarize Intentos = count(), Primero = min(TimeGenerated), Ultimo = max(TimeGenerated) by Computer, TargetUserName, LogonType, Status, SubStatus, IpAddress\n| sort by Intentos desc",
+        "size": 0,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table"
+      },
+      "name": "q-p02"
+    },
+    {
+      "type": 1,
+      "content": { "json": "### P15 — Ciclo de vida de cuentas y grupos de dominio" },
+      "name": "texto-p15"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SecurityEvent\n| where TimeGenerated {TimeRange}\n| where EventID in (4720, 4722, 4723, 4724, 4725, 4726, 4727, 4728, 4729, 4730, 4732, 4733, 4738, 4767, 4776)\n| where TargetUserName startswith 'SOCp15' or TargetUserName startswith 'SOCg15' or MemberName has 'SOCp15' or TargetAccount has 'SOCp15'\n| project TimeGenerated, Computer, EventID, Activity, SubjectUserName, TargetUserName, MemberName\n| sort by TimeGenerated asc",
+        "size": 0,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table"
+      },
+      "name": "q-p15"
+    },
+    {
+      "type": 1,
+      "content": { "json": "### P03 — Creación de procesos con marcador (4688)" },
+      "name": "texto-p03"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SecurityEvent\n| where TimeGenerated {TimeRange}\n| where EventID == 4688 and CommandLine has 'SOC-L2-P03'\n| project TimeGenerated, Computer, SubjectUserName, NewProcessName, CommandLine, ParentProcessName\n| sort by TimeGenerated desc",
+        "size": 0,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table"
+      },
+      "name": "q-p03"
+    },
+    {
+      "type": 1,
+      "content": { "json": "### P04 y P04B — Linux Syslog y accesos SSH/su fallidos" },
+      "name": "texto-p04"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "Syslog\n| where TimeGenerated {TimeRange}\n| where SyslogMessage has 'SOC-L2-P04' or (ProcessName in ('sshd','su') and SyslogMessage has 'socp04')\n| project TimeGenerated, Computer, Facility, SeverityLevel, ProcessName, SyslogMessage\n| sort by TimeGenerated desc",
+        "size": 0,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table"
+      },
+      "name": "q-p04"
+    },
+    {
+      "type": 1,
+      "content": { "json": "### P05 — Peticiones tipo escáner a App Service" },
+      "name": "texto-p05"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AppServiceHTTPLogs\n| where TimeGenerated {TimeRange}\n| where UserAgent startswith 'SOC-L2-Lab'\n| summarize Peticiones = count() by CsMethod, ScStatus, CsUriStem, CIp\n| sort by Peticiones desc",
+        "size": 0,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table"
+      },
+      "name": "q-p05"
+    },
+    {
+      "type": 1,
+      "content": { "json": "### P11 y P12 — Servidores web Apache (local6) e IIS (W3CIISLog)" },
+      "name": "texto-web"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let apache = Syslog | where TimeGenerated {TimeRange} | where Facility == 'local6' and SyslogMessage has 'SOC-L2-P11' | summarize Peticiones = count() by Servidor = 'Apache (local6)';\nlet iis = W3CIISLog | where TimeGenerated {TimeRange} | where csUriStem has 'SOC-L2-P12' or csUserAgent has 'SOC-L2-Lab' | summarize Peticiones = count() by Servidor = 'IIS (W3CIISLog)';\nunion apache, iis",
+        "size": 0,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table"
+      },
+      "name": "q-web"
+    },
+    {
+      "type": 1,
+      "content": { "json": "### P07 — Auditoría de Key Vault" },
+      "name": "texto-p07"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AZKVAuditLogs\n| where TimeGenerated {TimeRange}\n| where OperationName has 'Secret' or RequestUri has 'soc-l2-p07'\n| project TimeGenerated, OperationName, ResultType, ResultSignature, HttpStatusCode, CallerIpAddress, RequestUri\n| sort by TimeGenerated desc",
+        "size": 0,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table"
+      },
+      "name": "q-p07"
+    },
+    {
+      "type": 1,
+      "content": { "json": "### P08 y P10 — Actividad en AKS (auditoría admin y eventos)" },
+      "name": "texto-aks"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "AKSAuditAdmin\n| where TimeGenerated {TimeRange}\n| where RequestUri has 'soc-l2-p08'\n| project TimeGenerated, Verb, RequestUri, Decision = tostring(parse_json(tostring(ResponseStatus)).code), Usuario = tostring(parse_json(tostring(User)).username)\n| sort by TimeGenerated desc",
+        "size": 0,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table"
+      },
+      "name": "q-p08"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "KubeEvents\n| where TimeGenerated {TimeRange}\n| where Namespace startswith 'soc-l2-p08' or Message has 'soc-l2-p10'\n| project TimeGenerated, Namespace, Name, Reason, Message, KubeEventType\n| sort by TimeGenerated desc",
+        "size": 0,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table"
+      },
+      "name": "q-p10"
+    },
+    {
+      "type": 1,
+      "content": { "json": "### Incidentes generados por las reglas LAB-Pxx" },
+      "name": "texto-incidentes"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SecurityIncident\n| where TimeGenerated {TimeRange}\n| where Title startswith 'LAB-'\n| summarize arg_max(TimeGenerated, Status, Severity, Owner) by IncidentNumber, Title\n| project IncidentNumber, Title, Severity, Status, Owner\n| sort by IncidentNumber desc",
+        "size": 0,
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "table"
+      },
+      "name": "q-incidentes"
+    }
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
