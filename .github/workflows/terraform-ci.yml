@@ -27,7 +27,7 @@ jobs:
       - name: Configurar Terraform CLI
         uses: hashicorp/setup-terraform@v4
         with:
-          terraform_version: "1.7.5"
+          terraform_version: "1.9.0"
 
       - name: Verificar formato (terraform fmt)
         id: fmt
