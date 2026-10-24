@@ -2,7 +2,7 @@
 
 > **Repositorio oficial de GitHub:** [https://github.com/soysoliscarlos/sentinel-soc-lab](https://github.com/soysoliscarlos/sentinel-soc-lab)
 
-Guía operativa propuesta: [cobertura de Sentinel y pruebas controladas](../Research/Sentinel%20-%20Cobertura%20y%20pruebas%20del%20laboratorio.md), con fuentes pendientes, consultas KQL y ejemplos de incidentes. No añade infraestructura ni ejecuta pruebas sobre Azure.
+Guía operativa propuesta: [cobertura de Sentinel y pruebas controladas](docs/Sentinel-Cobertura-y-pruebas.md), con fuentes pendientes, consultas KQL y ejemplos de incidentes. No añade infraestructura ni ejecuta pruebas sobre Azure.
 
 ## Alcance confirmado
 
@@ -300,7 +300,7 @@ No se exportan kubeconfig, contraseñas ni claves del workspace como outputs. La
 
 ## Verificación operativa después de un despliegue autorizado
 
-> Generación automática de actividad: [Invoke-SocLabLogGeneration.ps1](scripts/Invoke-SocLabLogGeneration.ps1) ejecuta las pruebas P02–P15 de la [guía de cobertura](../Research/Sentinel%20-%20Cobertura%20y%20pruebas%20del%20laboratorio.md). Terraform la lanza al final del apply con `enable_log_generation` ([detalle](#generación-de-logs-al-final-del-despliegue)), o puede ejecutarse a mano. Usa `-WhatIf` para revisar el alcance sin generar actividad.
+> Generación automática de actividad: [Invoke-SocLabLogGeneration.ps1](scripts/Invoke-SocLabLogGeneration.ps1) ejecuta las pruebas P02–P15 de la [guía de cobertura](docs/Sentinel-Cobertura-y-pruebas.md). Terraform la lanza al final del apply con `enable_log_generation` ([detalle](#generación-de-logs-al-final-del-despliegue)), o puede ejecutarse a mano. Usa `-WhatIf` para revisar el alcance sin generar actividad.
 
 1. Comprobar ambas extensiones AMA con estado satisfactorio y la asociación de cada DCR. En Ubuntu comprobar `cloud-init status --wait` y `systemctl status rsyslog`.
 2. Hacer un acceso administrativo normal autorizado a cada VM. Algunos eventos Windows, por ejemplo 4688, requieren habilitar previamente la política de auditoría correspondiente; incluirlos en un XPath no habilita esa auditoría ni instala Sysmon.
