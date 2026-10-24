@@ -1,6 +1,9 @@
-# Laboratorio SOC L2: Terraform para Azure
+# Azure SOC L2 Cyber Range: Threat Detection & Incident Response con IaC
+### Laboratorio Efímero de Ciberseguridad Cloud con Terraform, Ansible y Microsoft Sentinel
 
 > **Repositorio oficial de GitHub:** [https://github.com/soysoliscarlos/sentinel-soc-lab](https://github.com/soysoliscarlos/sentinel-soc-lab)
+
+> **Presentación:** este repositorio incluye las diapositivas de la ponencia en PDF: [Bootcamp Analista SOC Nivel 2 2026 - Comunidad DOJO.pdf](slides/Bootcamp%20Analista%20SOC%20Nivel%202%202026%20-%20Comunidad%20DOJO.pdf).
 
 Guía operativa propuesta: [cobertura de Sentinel y pruebas controladas](docs/Sentinel-Cobertura-y-pruebas.md), con fuentes pendientes, consultas KQL y ejemplos de incidentes. No añade infraestructura ni ejecuta pruebas sobre Azure.
 
@@ -192,26 +195,147 @@ Acotar la ventana al periodo posterior a aplicar la extensión. Cero eventos no 
 - El workspace permite ingesta/consulta de red pública autenticada; no permite consultas anónimas. No hay AMPLS/Private Link.
 - Key Vault tiene un Private Endpoint en `10.20.3.0/24` y la zona `privatelink.vaultcore.azure.net` vinculada a la VNet. Desde ella se usa el nombre normal del vault, resuelto a su IP privada. El endpoint público permanece habilitado solo para `admin_source_cidr`, con `default_action = "Deny"` y sin bypass de servicios Azure. Esta excepción no restringe el tráfico que entra por Private Endpoint: sigue siendo obligatorio autorizarlo mediante RBAC.
 
-## Requisitos pendientes antes de desplegar
+## Requisitos completos para construir y configurar el laboratorio
 
-1. **Confirmar presupuesto y autorización del entorno.** Elegir preferentemente una suscripción exclusiva de laboratorio; Azure Activity y asignaciones RBAC tienen alcance fuera del grupo del laboratorio.
-2. Terraform >= 1.9 y < 2, Azure CLI y proveedor AzureRM **5.10.0**, fijado en la configuración y en el lockfile. Esta configuración usa nombres de atributos de AzureRM 5; no copiar sin adaptar a AzureRM 4.
-3. Contributor para crear recursos y diagnósticos, con alcance de suscripción para el diagnóstico Azure Activity; además User Access Administrator o Role Based Access Control Administrator para asignar roles. Owner cubre ambos. Se pueden usar permisos equivalentes más acotados si el administrador los prepara.
-4. Registro previo de `Microsoft.Compute`, `Microsoft.Network`, `Microsoft.OperationalInsights`, `Microsoft.OperationsManagement`, `Microsoft.SecurityInsights`, `Microsoft.Insights`, `Microsoft.Web`, `Microsoft.ContainerService`, `Microsoft.ManagedIdentity` y `Microsoft.KeyVault`. El proveedor tiene `resource_provider_registrations = "none"`: no registra proveedores implícitamente.
-5. Cuota y capacidad para dos VM D2s_v6 y dos nodos AKS D4s_v6 (más capacidad transitoria para actualización/rotación), discos e IP públicas. Revisar restricciones de nuevas suscripciones y políticas sobre IP públicas, SKUs y ubicaciones.
-6. La identidad autenticada que ejecuta el proveedor AzureRM se obtiene automáticamente mediante `data.azurerm_client_config.current.object_id`. Recibe `Azure Kubernetes Service RBAC Cluster Admin` solo en este clúster y `Key Vault Secrets Officer` solo en el vault. Con Azure CLI será el usuario autenticado; con service principal, OIDC o identidad administrada será esa identidad, no el usuario humano que inició el pipeline. Mantener una identidad estable entre ejecuciones y revisar cambios de principal en el plan.
-7. Terraform genera el par RSA de 4096 bits con TLS 4.4.2 y registra la pública mediante `azurerm_ssh_public_key`. Esa misma pública configura Ubuntu y se guarda como secreto `linux-ssh-public-key` en Key Vault. `azurerm_ssh_public_key` no genera claves por sí solo. La privada **queda en el estado** (decisión confirmada) y no se almacena en Key Vault. Random 3.9.1 genera la contraseña Windows de `socadmin` con 32 caracteres y al menos cuatro mayúsculas, cuatro minúsculas, cuatro números y cuatro símbolos. La misma contraseña configura la VM y se almacena en el secreto `windows-admin-password`. La contraseña **también queda en el estado**: `sensitive` oculta valores en salidas normales, **no los cifra en el estado ni en un plan guardado**.
-8. Prefijo disponible globalmente para App Service; versiones AKS e imágenes disponibles en la región. Si se proporciona `kubernetes_version`, comprobar su soporte antes del plan.
+Para desplegar y operar con éxito este laboratorio SOC L2 de punta a punta, se deben cumplir los siguientes requisitos en Azure (Tenant, Suscripción, Roles, Proveedores y Cuotas), en el entorno local del operador (Herramientas, CLI, Kubernetes, Ansible en WSL) y en la configuración de seguridad.
 
-Para comprobar proveedores existentes, después de autenticar y seleccionar la suscripción:
+### 1. Requisitos de Tenant y Cuenta de Microsoft Entra ID
+- **Identidad de acceso:** Una cuenta de usuario o Entra ID Service Principal (SPN) con credenciales activas para iniciar sesión vía Azure CLI (`az login`).
+- **Object ID:** Terraform captura automáticamente el `object_id` de la identidad autenticada (`data.azurerm_client_config.current.object_id`) para asignarle permisos administrativos en Azure Kubernetes Service (AKS) y Azure Key Vault.
+- **Permisos en el Tenant:**
+  - Para desplegar la infraestructura base, monitoreo, Sentinel, Azure ML y playbooks **no se requiere ser Global Administrator** del Tenant; basta con tener los roles adecuados en la suscripción de Azure.
+  - *Nota opcional:* Solo si en el futuro se desea otorgar consentimiento de administrador para consultas directas a Microsoft Graph API o habilitar conectores de nivel de inquilino (Entra ID audit logs a Sentinel), se requeriría el rol *Global Administrator* o *Security Administrator* de Entra ID.
 
+### 2. Requisitos de Suscripción de Azure
+- **Tipo de Suscripción:** Se recomienda enfáticamente utilizar una suscripción de Azure **dedicada y exclusiva para el laboratorio** (Pay-As-You-Go, Microsoft Azure Sponsorship, Visual Studio Enterprise o suscripción de pruebas MVP/Partner).
+- **Aislamiento de alcance:** Varios recursos del laboratorio tienen impacto a nivel de suscripción:
+  - `AzureActivity`: El diagnóstico de auditoría recolecta operaciones de todos los grupos de recursos de la suscripción hacia el workspace `soc-l2-law`.
+  - `Microsoft Defender for Servers`: Con `enable_defender_for_servers = true`, la activación del Plan 1 o Plan 2 aplica sobre **todas las máquinas virtuales** existentes en la suscripción.
+  - Purga de Key Vault: La purga definitiva de vaults eliminados (`Microsoft.KeyVault/locations/deletedVaults/purge/action`) durante `terraform destroy` exige permisos con alcance de suscripción.
+
+### 3. Roles y Permisos RBAC de Azure Requeridos
+La identidad que ejecuta Terraform (`az login`) debe poseer los siguientes roles asignados sobre la suscripción:
+- **Rol principal:** `Contributor` (Colaborador) sobre la suscripción (o sobre el Resource Group si este se precrea, aunque el diagnóstico de suscripción exige alcance de suscripción).
+- **Rol de administración de acceso:** `User Access Administrator` o `Role Based Access Control Administrator` sobre la suscripción o grupo de recursos. Este rol es **indispensable** porque Terraform realiza asignaciones de rol RBAC automáticas:
+  - A la identidad de la Compute Instance de Azure ML: `Log Analytics Reader` sobre el workspace.
+  - A las identidades administradas de las Logic Apps (Playbooks): `Microsoft Sentinel Responder`.
+  - Al Service Principal nativo de Sentinel (`Azure Security Insights`): `Microsoft Sentinel Automation Contributor`.
+  - A la propia identidad del ejecutor: `Azure Kubernetes Service RBAC Cluster Admin` y `Key Vault Secrets Officer`.
+- *Alternativa directa:* El rol **`Owner`** (Propietario) sobre la suscripción reúne ambos permisos (Contributor + User Access Administrator).
+- **Permiso para destrucción y purga:** Para ejecutar `terraform destroy` y purgar el Key Vault, la identidad necesita `Microsoft.KeyVault/locations/deletedVaults/purge/action` a nivel de suscripción (incluido en `Contributor` o `Key Vault Contributor`).
+
+### 4. Proveedores de Recursos de Azure (Resource Providers)
+Dado que [providers.tf](providers.tf) tiene configurado `resource_provider_registrations = "none"` para evitar bloqueos por falta de permisos de registro en tiempo de ejecución, **todos los proveedores requeridos deben estar previamente registrados** en la suscripción.
+
+| Resource Provider | Propósito en el Laboratorio | Archivo Terraform |
+| --- | --- | --- |
+| `Microsoft.Compute` | Máquinas virtuales Windows y Linux, extensiones AMA y Custom Script | `compute.tf` |
+| `Microsoft.Network` | VNet, Subredes, NSGs, IPs públicas, DNS Privado, Private Endpoint, Load Balancer | `network.tf` |
+| `Microsoft.OperationalInsights` | Workspace central de Log Analytics (`soc-l2-law`) | `monitoring.tf` |
+| `Microsoft.OperationsManagement` | Soluciones de monitoreo y extensiones OMS | `monitoring.tf` |
+| `Microsoft.SecurityInsights` | Microsoft Sentinel, Onboarding, Reglas analíticas y Reglas de automatización | `sentinel.tf` |
+| `Microsoft.Insights` | Azure Monitor Agent (AMA), Data Collection Rules (DCR), Application Insights | `monitoring.tf` |
+| `Microsoft.Web` | Azure App Service Linux y flujos de trabajo de Logic Apps (Playbooks) | `app_service.tf`, `sentinel_playbooks.tf` |
+| `Microsoft.ContainerService` | Clúster de Kubernetes (AKS) y Container Insights | `aks.tf` |
+| `Microsoft.ManagedIdentity` | Identidades administradas asignadas por usuario (AKS, VMs) | `aks.tf`, `compute.tf` |
+| `Microsoft.KeyVault` | Almacén de claves, certificados y secretos con Private Endpoint | `key_vault.tf` |
+| `Microsoft.Security` | Microsoft Defender for Cloud, Defender for Servers y WDATP | `defender.tf` |
+| `Microsoft.Logic` | Motor de ejecución de Logic Apps para respuesta automatizada (SOAR) | `sentinel_playbooks.tf` |
+| `Microsoft.MachineLearningServices` | Workspace de Azure ML y Compute Instance para Jupyter Notebooks | `sentinel_notebooks.tf` |
+
+**Script de validación y registro en PowerShell:**
 ```powershell
-az provider list --query "[?namespace=='Microsoft.Compute' || namespace=='Microsoft.Network' || namespace=='Microsoft.OperationalInsights' || namespace=='Microsoft.OperationsManagement' || namespace=='Microsoft.SecurityInsights' || namespace=='Microsoft.Insights' || namespace=='Microsoft.Web' || namespace=='Microsoft.ContainerService' || namespace=='Microsoft.ManagedIdentity' || namespace=='Microsoft.KeyVault'].{Namespace:namespace,Estado:registrationState}" -o table
+$providers = @(
+  "Microsoft.Compute", "Microsoft.Network", "Microsoft.OperationalInsights",
+  "Microsoft.OperationsManagement", "Microsoft.SecurityInsights", "Microsoft.Insights",
+  "Microsoft.Web", "Microsoft.ContainerService", "Microsoft.ManagedIdentity",
+  "Microsoft.KeyVault", "Microsoft.Security", "Microsoft.Logic", "Microsoft.MachineLearningServices"
+)
+foreach ($p in $providers) {
+  $state = (az provider show --namespace $p --query "registrationState" -o tsv 2>$null)
+  if ($state -ne "Registered") {
+    Write-Host "Registrando proveedor: $p..." -ForegroundColor Yellow
+    az provider register --namespace $p --wait
+  } else {
+    Write-Host "Proveedor ya registrado: $p" -ForegroundColor Green
+  }
+}
+```
+
+### 5. Cuotas de Cómputo y Límites de Capacidad Regional
+Verificar que la región objetivo (por defecto `eastus2`) disponga de cuota y capacidad suficiente antes del despliegue:
+- **Familia `Standard_Dsv6`:**
+  - 2 x VM `Standard_D2s_v6` = 4 vCPUs.
+  - 2 x Nodos AKS `Standard_D4s_v6` = 8 vCPUs (más 4 vCPUs de margen temporal durante actualizaciones/surge = hasta 12 vCPUs).
+  - *Total familia Dsv6:* Mínimo **12 a 16 vCPUs** disponibles.
+- **Familia `Standard_DSv2` (para Azure ML):**
+  - 1 x Compute Instance `Standard_DS2_v2` = 2 vCPUs.
+- **Direcciones IP Públicas Standard:** Mínimo **2 a 3 IPs públicas** (Ubuntu, Windows y Load Balancer de salida de AKS).
+- **Validación previa:**
+```powershell
 az vm list-usage --location eastus2 -o table
+az vm list-skus --location eastus2 --size Standard_D2s_v6 --all -o table
+az vm list-skus --location eastus2 --size Standard_D4s_v6 --all -o table
 az aks get-versions --location eastus2 -o table
 ```
 
-Si faltan registros, un administrador debe registrarlos antes del despliegue. Las consultas de cuota no garantizan capacidad ni disponibilidad de una SKU.
+### 6. Requisitos del Entorno Local (Estación de Trabajo)
+El equipo desde el cual se clona y ejecuta el proyecto requiere:
+- **Sistema Operativo:** Windows 10/11 (con PowerShell 5.1 o PowerShell 7+) o Linux (Ubuntu 22.04+ / Debian / Fedora).
+- **Herramientas de Infraestructura:**
+  - **Terraform:** versión `>= 1.9.0` y `< 2.0.0` (probado con v1.9 y v1.10).
+  - **Azure CLI (`az`):** versión `>= 2.60.0`. Sesión iniciada con `az login` y suscripción seleccionada con `az account set --subscription "<subscription-id>"`.
+  - **Git:** Para clonar y versionar el repositorio.
+- **Herramientas de Kubernetes:**
+  - **`kubectl`:** Para interactuar con el clúster AKS.
+  - **`kubelogin`:** Imprescindible para autenticarse contra el API Server de AKS con Azure RBAC y Entra ID (`kubelogin convert-kubeconfig -l azurecli`).
+- **Conectividad de Red del Administrador:**
+  - Obtener la IP pública real de salida (IPv4) del operador y configurarla en `terraform.tfvars`:
+    ```hcl
+    admin_source_cidr = "203.0.113.45/32" # Reemplazar con tu IP pública /32
+    ```
+  - *Regla:* El firewall de Key Vault, los NSG de las VM y la API de AKS solo permiten conexiones provenientes de este CIDR.
+
+### 7. Requisitos para Ansible (`enable_ansible = true`)
+Si se activa la configuración automatizada de servicios (Active Directory, IIS, Apache y PostgreSQL) mediante [ansible.tf](ansible.tf) y [Ansible/](Ansible/):
+- **Ejecución desde Windows (Vía WSL 2):**
+  - Requiere **WSL 2** con una distribución llamada exactamente `Ubuntu`.
+  - El lanzador [Invoke-Ansible.ps1](Ansible/Invoke-Ansible.ps1) invoca `wsl -d Ubuntu` para ejecutar el script Python [run.py](Ansible/run.py) y el playbook [site.yml](Ansible/site.yml).
+  - En la distribución WSL Ubuntu se requiere:
+    - **Python 3.12 o superior** con módulo `venv`: `sudo apt-get install -y python3-venv openssh-client`
+    - Entorno virtual en `~/.venvs/soc-ansible`:
+      ```bash
+      python3 -m venv ~/.venvs/soc-ansible
+      ~/.venvs/soc-ansible/bin/python -m pip install -r Ansible/requirements.txt
+      ~/.venvs/soc-ansible/bin/ansible-galaxy collection install -r Ansible/requirements.yml
+      ```
+    - Colecciones requeridas: `ansible.windows`, `community.windows`, `community.general`, `community.postgresql`.
+    - Módulos Python requeridos: `ansible-core`, `pywinrm`, `psycopg2-binary`.
+- **Condición de Terraform:**
+  - `enable_ansible = true` **exige obligatoriamente** `create_linux_vm = true` y `create_windows_vm = true`.
+- **Conectividad SSH:** WSL debe tener salida a internet por TCP/22 hacia las IPs públicas de ambas VMs.
+
+### 8. Requisitos para Azure Machine Learning y Notebooks (`enable_sentinel_notebooks = true`)
+- **Infraestructura:** Creación del workspace de Azure ML, Key Vault dedicado, App Insights y Storage Account (`socl2mlsa`).
+- **Compute Instance:** Creación de `soc-l2-ci` (tamaño `Standard_DS2_v2`).
+- **Librerías Python en el kernel de Azure ML:**
+  - Los cuadernos ([SOC-L2-Eventos.ipynb](notebooks/SOC-L2-Eventos.ipynb), [SOC-L2-Caza.ipynb](notebooks/SOC-L2-Caza.ipynb) y [SOC-L2-Analisis-Logs.ipynb](notebooks/SOC-L2-Analisis-Logs.ipynb)) utilizan:
+    `azure-identity`, `azure-monitor-query`, `pandas`, `matplotlib`.
+  - La primera celda de cada cuaderno incluye `%pip install -q azure-identity azure-monitor-query pandas matplotlib` para autoinstalarse en el kernel `Python 3.10 - AzureML`.
+- **Credenciales Zero-Trust:** La autenticación se realiza mediante `DefaultAzureCredential()` utilizando la identidad administrada asignada por el sistema de la Compute Instance, que posee el rol `Log Analytics Reader` sobre `soc-l2-law`.
+
+### 9. Requisitos para Playbooks y SOAR (`enable_sentinel_playbooks = true`)
+- **Proveedores de Recursos:** `Microsoft.Logic` y `Microsoft.Web` registrados.
+- **Conexiones de API:** Tras el primer `terraform apply`, se debe ingresar al portal de Azure a cada Logic App creada (`soc-l2-playbook-enrich` y `soc-l2-playbook-triage`) para validar y autorizar la conexión del conector `azuresentinel`.
+
+### 10. Requisitos de Seguridad y Protección del Estado de Terraform
+- **Datos Sensibles en `terraform.tfstate`:**
+  - Terraform genera localmente la clave privada SSH (`linux_ssh_private_key`) y la contraseña de Windows (`windows_admin_password`).
+  - Ambas credenciales se almacenan **en texto plano dentro del archivo de estado**. La directiva `sensitive` de Terraform solo oculta los valores en la consola, **no los cifra en el disco**.
+- **Reglas Críticas de Almacenamiento:**
+  - **NUNCA** guardar el estado en carpetas sincronizadas con servicios en la nube como OneDrive, Dropbox o Google Drive.
+  - **NUNCA** hacer commit de archivos `.tfstate`, `.tfstate.backup`, `.tfplan` ni `terraform.tfvars` en repositorios Git públicos (verificar [.gitignore](.gitignore)).
+  - **Backend Remoto Recomendado:** Para entornos de equipo o producción, configurar un backend en Azure Blob Storage con cifrado en reposo (`BlobStorage`), acceso exclusivo por RBAC, TLS 1.2+ y lease locking para proteger el estado concurrente.
 
 ## Costos y límites del laboratorio
 
