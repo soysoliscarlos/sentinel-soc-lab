@@ -288,7 +288,7 @@ az aks get-versions --location eastus2 -o table
 El equipo desde el cual se clona y ejecuta el proyecto requiere:
 - **Sistema Operativo:** Windows 10/11 (con PowerShell 5.1 o PowerShell 7+) o Linux (Ubuntu 22.04+ / Debian / Fedora, si no se usa el lanzador WSL de Ansible).
 - **Herramientas de Infraestructura:**
-  - **Terraform:** versión `>= 1.7.5` y `< 2.0.0` (probado con v1.9 y v1.10).
+  - **Terraform:** versión `>= 1.11.0` y `< 2.0.0` (los mocks de pruebas durante el plan requieren v1.11 o posterior).
   - **Azure CLI (`az`):** versión `>= 2.60.0`. Sesión iniciada con `az login` y suscripción seleccionada con `az account set --subscription "<subscription-id>"`.
   - **Git:** Para clonar y versionar el repositorio.
 - **Herramientas de Kubernetes:**

@@ -288,7 +288,7 @@ az aks get-versions --location eastus2 -o table
 The operator machine cloning and running the project requires:
 - **Operating System:** Windows 10/11 (with Windows PowerShell 5.1 or PowerShell 7+) or Linux (Ubuntu 22.04+ / Debian / Fedora, if not using the Windows WSL Ansible launcher).
 - **Infrastructure Tools:**
-  - **Terraform:** `>= 1.7.5` and `< 2.0.0` (tested with v1.9 and v1.10).
+  - **Terraform:** `>= 1.11.0` and `< 2.0.0` (plan-time test mocks require v1.11 or newer).
   - **Azure CLI (`az`):** `>= 2.60.0`. Signed in via `az login` with target subscription selected via `az account set --subscription "<subscription-id>"`.
   - **Git:** To clone and manage the repository.
 - **Kubernetes Tools:**
