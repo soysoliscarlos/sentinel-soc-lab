@@ -1,13 +1,13 @@
 version: 2
 updates:
-  # Mantener actualizadas las GitHub Actions
+  # Keep GitHub Actions up to date
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
 
-  # Mantener actualizados los proveedores de Terraform
+  # Keep Terraform providers up to date
   - package-ecosystem: "terraform"
     directory: "/"
     schedule:

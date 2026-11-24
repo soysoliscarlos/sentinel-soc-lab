@@ -72,7 +72,7 @@ class LoggingConfigurationTests(unittest.TestCase):
         self.assertNotIn("/var/log/syslog", config)
         self.assertNotIn("/var/log/postgresql", config)
 
-    @unittest.skipUnless(shutil.which("rsyslogd"), "rsyslogd no esta instalado en el controlador")
+    @unittest.skipUnless(shutil.which("rsyslogd"), "rsyslogd is not installed on the control node")
     def test_rsyslog_accepts_the_actual_reader_configuration(self):
         reader = ROOT / "files" / "30-soc-apache.conf"
         with tempfile.TemporaryDirectory(prefix="soc-rsyslog-", dir="/tmp") as directory:

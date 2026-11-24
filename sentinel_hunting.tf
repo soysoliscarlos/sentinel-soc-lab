@@ -1,8 +1,8 @@
 locals {
   sentinel_hunting_queries = {
     HUNT01 = {
-      display_name = "HUNT-01 - Ejecucion Anomala de Procesos y LOLBAS (T1059.001 / T1218)"
-      description  = "Caza proactiva de procesos sospechosos o binarios de confianza (PowerShell, Cmd, Certutil, Wmic) con parametros de ofuscacion o evasion."
+      display_name = "HUNT-01 - Anomalous Process Execution and LOLBAS (T1059.001 / T1218)"
+      description  = "Proactive hunting for suspicious processes or living-off-the-land binaries (PowerShell, Cmd, Certutil, Wmic) invoked with obfuscation or evasion flags."
       tactics      = "Execution,DefenseEvasion"
       query        = <<-KQL
         SecurityEvent
@@ -21,8 +21,8 @@ locals {
       KQL
     }
     HUNT02 = {
-      display_name = "HUNT-02 - Movimiento Lateral y Accesos Interactivos Anomalos (T1078 / T1021)"
-      description  = "Caza proactiva de patrones de autenticacion anomala, fuerza bruta interna o sesiones RDP/Red entre servidores y origenes no autorizados."
+      display_name = "HUNT-02 - Lateral Movement and Anomalous Interactive Logons (T1078 / T1021)"
+      description  = "Proactive hunting for anomalous authentication patterns, internal brute force, or RDP/Network logon sessions from external or unexpected sources."
       tactics      = "LateralMovement,CredentialAccess"
       query        = <<-KQL
         SecurityEvent
@@ -45,9 +45,9 @@ locals {
           by IpAddress, Computer, bin(TimeGenerated, 1h)
         | where FailureCount >= 2 or (SuccessCount > 0 and IpAddress !in ("", "-", "127.0.0.1", "::1"))
         | extend HuntingFinding = case(
-            FailureCount >= 3, "Posible Fuerza Bruta o Spraying",
-            SuccessCount > 0 and IpAddress !in ("", "-", "127.0.0.1"), "Acceso Remoto para Investigar",
-            "Actividad Relevante"
+            FailureCount >= 3, "Potential Brute Force or Password Spraying",
+            SuccessCount > 0 and IpAddress !in ("", "-", "127.0.0.1"), "Remote Logon to Investigate",
+            "Notable Activity"
           )
         | project TimeGenerated, Computer, IpAddress, HuntingFinding, TotalAttempts, FailureCount, SuccessCount, UsersTargeted, LogonTypes
         | order by TimeGenerated desc

@@ -17,26 +17,26 @@ permissions:
 
 jobs:
   validate:
-    name: "Validar Terraform"
+    name: "Validate Terraform"
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout del repositorio
+      - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Configurar Terraform CLI
+      - name: Set up Terraform CLI
         uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: "1.9.0"
 
-      - name: Verificar formato (terraform fmt)
+      - name: Check formatting (terraform fmt)
         id: fmt
-        run: terraform fmt -check -diff
+        run: terraform fmt -check -diff -recursive
 
-      - name: Inicializar configuración sin backend remoto
+      - name: Initialize configuration without remote backend
         id: init
         run: terraform init -backend=false
 
-      - name: Validar sintaxis y configuración (terraform validate)
+      - name: Validate syntax and configuration (terraform validate)
         id: validate
         run: terraform validate

@@ -169,7 +169,7 @@ run "lab_defaults_and_access" {
       azurerm_kubernetes_cluster.lab[0].default_node_pool[0].node_count == 2 &&
       azurerm_kubernetes_cluster.lab[0].default_node_pool[0].vm_size == "Standard_D4s_v6"
     )
-    error_message = "El perfil debe conservar la region, App Service B1 y AKS Free con dos nodos D4s_v6."
+    error_message = "Baseline profile must keep region eastus2, App Service B1, and AKS Free tier with two D4s_v6 nodes."
   }
 
   assert {
@@ -178,7 +178,7 @@ run "lab_defaults_and_access" {
       alltrue([for ip in azurerm_public_ip.vm : ip.sku == "Standard" && ip.allocation_method == "Static"]) &&
       alltrue([for key, nic in azurerm_network_interface.vm : nic.ip_configuration[0].public_ip_address_id == azurerm_public_ip.vm[key].id])
     )
-    error_message = "Ambas VM deben tener su propia IP publica Standard estatica asociada a la NIC."
+    error_message = "Both VMs must have their own static Standard public IP attached to their NIC."
   }
 
   assert {
@@ -188,7 +188,7 @@ run "lab_defaults_and_access" {
       length([for rule in nsg.security_rule : rule if rule.access == "Allow" && rule.source_address_prefix == var.admin_source_cidr && rule.destination_port_range == local.vm[key].admin_port]) == 1 &&
       length([for rule in nsg.security_rule : rule if rule.access == "Deny" && rule.priority == 200 && rule.direction == "Inbound"]) == 1
     ])
-    error_message = "SSH/RDP solo deben aceptar el CIDR aprobado; el resto del trafico entrante debe denegarse."
+    error_message = "SSH/RDP must accept only the approved CIDR; all other inbound traffic must be denied."
   }
 
   assert {
@@ -204,7 +204,7 @@ run "lab_defaults_and_access" {
       !azurerm_linux_web_app.web[0].ftp_publish_basic_authentication_enabled &&
       !azurerm_linux_web_app.web[0].webdeploy_publish_basic_authentication_enabled
     )
-    error_message = "Debe conservarse SSH por clave, AKS con Entra/RBAC y App Service sin publicacion basica."
+    error_message = "Key-only SSH, AKS Entra/RBAC without local accounts, and App Service without basic publishing auth must be enforced."
   }
 }
 
@@ -225,7 +225,7 @@ run "ansible_opt_in_and_network" {
       length(random_password.dsrm) == 1 &&
       azurerm_key_vault_secret.dsrm[0].name == "windows-dsrm-password"
     )
-    error_message = "Ansible debe incluir bootstrap Windows, ejecucion Terraform y un secreto DSRM recuperable."
+    error_message = "Ansible opt-in must include Windows OpenSSH bootstrap, Terraform trigger execution, and a recoverable DSRM secret."
   }
 
   assert {
@@ -235,7 +235,7 @@ run "ansible_opt_in_and_network" {
       azurerm_windows_virtual_machine.windows[0].os_disk[0].caching == "None" &&
       local.ansible_config.domain_name == "lab.example.test"
     )
-    error_message = "El DC debe conservar una IP privada fija, disco sin cache y el dominio confirmado."
+    error_message = "Domain controller must retain static private IP 10.20.1.10, uncached OS disk, and the configured AD domain."
   }
 
   assert {
@@ -246,7 +246,7 @@ run "ansible_opt_in_and_network" {
       length([for rule in nsg.security_rule : rule if rule.destination_port_range == "80" && rule.access == "Allow"]) == 1 &&
       length([for rule in nsg.security_rule : rule if contains(["5432", "3389", "22", "80"], rule.destination_port_range) == false && rule.access == "Allow"]) == 0
     ])
-    error_message = "Solo se permite administracion y HTTP desde el CIDR aprobado, nunca PostgreSQL ni puertos AD."
+    error_message = "Only management ports and HTTP from the approved CIDR are allowed; never PostgreSQL or AD ports."
   }
 }
 
@@ -263,7 +263,7 @@ run "ansible_disabled_by_default" {
       azurerm_network_interface.vm["windows"].ip_configuration[0].private_ip_address_allocation == "Dynamic" &&
       azurerm_windows_virtual_machine.windows[0].os_disk[0].caching == "ReadWrite"
     )
-    error_message = "Sin consentimiento explicito no debe prepararse SSH, promover Windows ni ejecutarse Ansible."
+    error_message = "Without explicit opt-in, Windows SSH bootstrap, AD promotion, and Ansible execution must remain disabled."
   }
 }
 
@@ -282,7 +282,7 @@ run "service_logs_to_existing_workspace" {
       one(azurerm_monitor_data_collection_rule.linux[0].destinations).log_analytics[0].workspace_resource_id == azurerm_log_analytics_workspace.soc.id &&
       one(azurerm_monitor_data_collection_rule.linux[0].data_flow).destinations == tolist(["soc"])
     )
-    error_message = "PostgreSQL local5 y Apache local6 deben enviarse por Syslog a soc sin perder las facilities previas."
+    error_message = "PostgreSQL local5 and Apache local6 must flow via Syslog to destination soc without dropping baseline facilities."
   }
 
   assert {
@@ -294,7 +294,7 @@ run "service_logs_to_existing_workspace" {
       one(azurerm_monitor_data_collection_rule.windows[0].destinations).log_analytics[0].workspace_resource_id == azurerm_log_analytics_workspace.soc.id &&
       one(azurerm_monitor_data_collection_rule.windows[0].data_flow).destinations == tolist(["soc"])
     )
-    error_message = "IIS W3C debe leerse del sitio 1 y usar el mismo destino Log Analytics con stream compatible."
+    error_message = "IIS W3C logs must read from site 1 (W3SVC1) and route to the shared Log Analytics destination."
   }
 
   assert {
@@ -310,7 +310,7 @@ run "service_logs_to_existing_workspace" {
         for query in source.x_path_queries : length(regexall("EventID=", query)) <= 20
       ]) && length(source.x_path_queries) == ceil(length(local.windows_security_event_ids) / 20)]) == 1
     )
-    error_message = "AD DS debe conservar canales de servicio y auditoria de seguridad sin duplicar IDs ni superar 20 expresiones por XPath."
+    error_message = "AD DS must collect service channels and Security Event IDs without duplicates or exceeding 20 expressions per XPath."
   }
 
   assert {
@@ -318,7 +318,7 @@ run "service_logs_to_existing_workspace" {
       for name in ["linux-logging.yml", "files/Configure-ServiceLogging.ps1", "files/30-soc-apache.conf"] :
       contains(local.ansible_files, name)
     ])
-    error_message = "Los cambios en la configuracion de logs deben volver a ejecutar Ansible desde Terraform."
+    error_message = "Changes to logging configuration files must trigger Ansible re-execution from Terraform."
   }
 }
 
@@ -355,7 +355,7 @@ run "custom_skus_and_vm_sizes" {
       azurerm_log_analytics_workspace.soc.sku == var.log_workspace_sku &&
       alltrue([for ip in azurerm_public_ip.vm : ip.sku == var.public_ip_sku])
     )
-    error_message = "Todos los SKU y tamanos deben proceder de las variables, sin valores fijos en los recursos."
+    error_message = "All SKUs and VM sizes must come from input variables rather than hardcoded resource attributes."
   }
 }
 
@@ -375,7 +375,7 @@ run "app_service_direct_https_access" {
       !azurerm_linux_web_app.web[0].webdeploy_publish_basic_authentication_enabled &&
       output.app_service_url == "https://soc-unit-test-web.azurewebsites.net"
     )
-    error_message = "App Service debe recuperar acceso directo HTTPS sin restricciones del Gateway y conservar TLS y publicacion sin autenticacion basica."
+    error_message = "App Service must allow direct HTTPS access without Gateway IP restrictions while enforcing TLS 1.2 and disabling basic auth."
   }
 }
 
@@ -384,7 +384,7 @@ run "centralized_telemetry" {
 
   assert {
     condition     = length(azurerm_kubernetes_cluster.lab[0].oms_agent[0].oms_agent_identity) == 0
-    error_message = "La prueba debe reproducir Container Insights con autenticacion administrada sin identidad propia del complemento."
+    error_message = "Mock test must reproduce Container Insights with MSI authentication and an empty add-on identity list."
   }
 
   assert {
@@ -401,7 +401,7 @@ run "centralized_telemetry" {
         diagnostic.log_analytics_workspace_id == azurerm_log_analytics_workspace.soc.id
       ])
     )
-    error_message = "Sentinel, AMA, Container Insights y diagnosticos deben usar el mismo workspace."
+    error_message = "Sentinel, AMA, Container Insights, and diagnostic settings must all point to the same Log Analytics workspace."
   }
 
   assert {
@@ -419,7 +419,7 @@ run "centralized_telemetry" {
       azurerm_monitor_diagnostic_setting.key_vault.target_resource_id == azurerm_key_vault.lab.id &&
       azurerm_monitor_diagnostic_setting.activity.target_resource_id == "/subscriptions/${var.subscription_id}"
     )
-    error_message = "Cada agente, DCR y diagnostico debe estar asociado al recurso correcto."
+    error_message = "Every agent, DCR association, and diagnostic setting must attach to the expected target resource."
   }
 
   assert {
@@ -435,7 +435,7 @@ run "centralized_telemetry" {
       azurerm_log_analytics_workspace.soc.retention_in_days == 30 &&
       !azurerm_log_analytics_workspace.soc.local_authentication_enabled
     )
-    error_message = "Deben recolectarse Syslog, SecurityEvent, Event, contenedores, HTTP, auditoria AKS y Azure Activity con cuota y retencion."
+    error_message = "Syslog, SecurityEvent, Event, ContainerLogV2, AppServiceHTTPLogs, AKS admin audit, and Azure Activity must be collected with daily cap and retention."
   }
 
   assert {
@@ -443,7 +443,7 @@ run "centralized_telemetry" {
       for diagnostic in concat(azurerm_monitor_diagnostic_setting.web, azurerm_monitor_diagnostic_setting.aks, [azurerm_monitor_diagnostic_setting.key_vault]) :
       diagnostic.log_analytics_destination_type == "Dedicated"
     ])
-    error_message = "Los diagnosticos deben conservar tablas dedicadas para que las consultas de Sentinel no cambien de esquema."
+    error_message = "Diagnostic settings must use Dedicated destination tables so Sentinel queries keep resource-specific schemas."
   }
 
   assert {
@@ -453,7 +453,7 @@ run "centralized_telemetry" {
       toset([for log in azurerm_monitor_diagnostic_setting.key_vault.enabled_log : log.category]) == toset(["AuditEvent"]) &&
       toset([for log in azurerm_monitor_diagnostic_setting.activity.enabled_log : log.category]) == toset(["Administrative", "Security", "ServiceHealth", "Alert", "Recommendation", "Policy", "Autoscale", "ResourceHealth"])
     )
-    error_message = "No debe perderse ninguna categoria prevista, incluida autenticacion guard de AKS y auditoria de Key Vault."
+    error_message = "All expected diagnostic log categories—including AKS guard authentication and Key Vault AuditEvent—must be enabled."
   }
 
   assert {
@@ -462,7 +462,7 @@ run "centralized_telemetry" {
       one(dcr.destinations).log_analytics[0].name == "soc" &&
       one(dcr.data_flow).destinations == tolist(["soc"])
     ])
-    error_message = "Cada flujo debe apuntar al destino soc definido en su propia DCR, no solo declarar un workspace."
+    error_message = "Each DCR data_flow must reference the named destination 'soc' declared inside that DCR."
   }
 
   assert {
@@ -475,7 +475,7 @@ run "centralized_telemetry" {
       toset(one(azurerm_monitor_data_collection_rule.aks[0].data_flow).streams) == toset(["Microsoft-ContainerLogV2", "Microsoft-KubeEvents", "Microsoft-KubePodInventory"]) &&
       jsondecode(one(one(azurerm_monitor_data_collection_rule.aks[0].data_sources).extension).extension_json).dataCollectionSettings.enableContainerLogV2
     )
-    error_message = "Las fuentes deben emitir los streams esperados; un data_flow sin fuente compatible no garantiza recoleccion."
+    error_message = "Data sources must emit the streams referenced in data_flow; a data_flow without a matching source collects nothing."
   }
 
   assert {
@@ -485,7 +485,7 @@ run "centralized_telemetry" {
       azurerm_virtual_machine_extension.windows_audit[0].type == "CustomScriptExtension" &&
       jsondecode(azurerm_virtual_machine_extension.windows_audit[0].settings).commandToExecute == "powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand ${textencodebase64(file("${path.module}/scripts/Configure-WindowsAudit.ps1"), "UTF-16LE")}"
     )
-    error_message = "La politica de auditoria debe ejecutarse en la VM Windows con el script versionado y codificacion UTF-16LE."
+    error_message = "Windows audit policy must run on the Windows VM using the tracked script encoded in UTF-16LE."
   }
 }
 
@@ -501,7 +501,7 @@ run "key_vault_and_generated_ssh_key" {
       azurerm_key_vault_secret.linux_ssh_public_key[0].value == azurerm_ssh_public_key.linux[0].public_key &&
       azurerm_key_vault_secret.linux_ssh_public_key[0].key_vault_id == azurerm_key_vault.lab.id
     )
-    error_message = "La misma publica RSA generada debe registrarse en Azure, autorizar la VM y guardarse en Key Vault; nunca la privada."
+    error_message = "The generated RSA public key must register in Azure, authorize the Linux VM, and store in Key Vault (never the private key)."
   }
 
   assert {
@@ -517,7 +517,7 @@ run "key_vault_and_generated_ssh_key" {
       azurerm_role_assignment.key_vault_secrets.role_definition_name == "Key Vault Secrets Officer" &&
       azurerm_role_assignment.key_vault_secrets.principal_id == data.azurerm_client_config.current.object_id
     )
-    error_message = "El vault debe exigir RBAC, restringir el endpoint publico al CIDR administrativo y autorizar al ejecutor para escribir secretos."
+    error_message = "Key Vault must enforce RBAC, restrict its public endpoint to the admin CIDR, and grant Key Vault Secrets Officer to the caller."
   }
 
   assert {
@@ -534,7 +534,7 @@ run "key_vault_and_generated_ssh_key" {
       azurerm_monitor_diagnostic_setting.key_vault.target_resource_id == azurerm_key_vault.lab.id &&
       one(azurerm_monitor_diagnostic_setting.key_vault.enabled_log).category == "AuditEvent"
     )
-    error_message = "El Private Endpoint debe enlazar el vault, su subred y DNS privado; la auditoria debe dirigirse a Sentinel."
+    error_message = "Private Endpoint must wire Key Vault to its dedicated subnet and Private DNS zone, with AuditEvent logs routed to Sentinel."
   }
 }
 
@@ -586,7 +586,7 @@ run "generated_windows_password_in_key_vault" {
       random_password.windows_admin[0].min_special == 4 &&
       random_password.windows_admin[0].override_special == "!#$%&*()-_=+?"
     )
-    error_message = "La contrasena debe generarse con 32 caracteres y al menos cuatro de cada categoria."
+    error_message = "Windows password must be generated with 32 characters and at least four characters from each complexity class."
   }
 
   assert {
@@ -597,7 +597,7 @@ run "generated_windows_password_in_key_vault" {
       azurerm_key_vault_secret.windows_admin_password[0].name == "windows-admin-password" &&
       azurerm_key_vault_secret.windows_admin_password[0].key_vault_id == azurerm_key_vault.lab.id
     )
-    error_message = "Windows y el secreto del vault deben recibir exactamente la misma contrasena generada."
+    error_message = "Windows VM and the Key Vault secret must receive the exact same generated password."
   }
 }
 
@@ -630,7 +630,7 @@ run "log_generation_disabled_by_default" {
 
   assert {
     condition     = length(terraform_data.log_generation) == 0
-    error_message = "Sin consentimiento explicito Terraform no debe generar actividad de prueba."
+    error_message = "Terraform must not run synthetic log generation without explicit opt-in."
   }
 }
 
@@ -649,7 +649,7 @@ run "log_generation_after_telemetry" {
       contains(terraform_data.log_generation[0].triggers_replace, "Windows,Aks") &&
       contains(terraform_data.log_generation[0].triggers_replace, filesha256("${path.module}/scripts/Invoke-SocLabLogGeneration.ps1"))
     )
-    error_message = "La generacion de logs debe activarse solo por opt-in y reejecutarse si cambian las pruebas o el script."
+    error_message = "Log generation must activate only on opt-in and re-run whenever selected tests or the script change."
   }
 }
 
@@ -698,7 +698,7 @@ run "all_optional_components_disabled" {
         azurerm_key_vault_secret.dsrm, terraform_data.ansible,
       ] : length(instances) == 0
     ])
-    error_message = "No debe quedar ningun recurso exclusivo al desactivar todos los componentes opcionales."
+    error_message = "No dedicated component resources may remain when all optional components are disabled."
   }
 
   assert {
@@ -719,7 +719,7 @@ run "all_optional_components_disabled" {
       length(terraform_data.log_generation) == 1 &&
       alltrue([for index in range(3, 8) : terraform_data.log_generation[0].triggers_replace[index] == null])
     )
-    error_message = "Los outputs deben ser null, la red exclusiva debe desaparecer y los servicios compartidos y logs deben seguir disponibles."
+    error_message = "Component outputs must evaluate to null, dedicated subnets/NICs must disappear, and shared services must remain intact."
   }
 }
 
@@ -750,7 +750,7 @@ run "linux_disabled_independently" {
       output.linux_public_ip == null &&
       local.ansible_config == null
     )
-    error_message = "Desactivar Linux debe retirar sus dependencias sin afectar Windows, AKS ni App Service."
+    error_message = "Disabling Linux must remove its dedicated dependencies without affecting Windows, AKS, or App Service."
   }
 }
 
@@ -781,7 +781,7 @@ run "windows_disabled_independently" {
       output.windows_public_ip == null &&
       local.ansible_config == null
     )
-    error_message = "Desactivar Windows debe retirar sus dependencias sin afectar Linux, AKS ni App Service."
+    error_message = "Disabling Windows must remove its dedicated dependencies without affecting Linux, AKS, or App Service."
   }
 }
 
@@ -805,7 +805,7 @@ run "app_service_disabled_independently" {
       length(azurerm_kubernetes_cluster.lab) == 1 &&
       length(terraform_data.ansible) == 1
     )
-    error_message = "Desactivar App Service debe retirar tambien su plan y diagnosticos, sin afectar los otros componentes."
+    error_message = "Disabling App Service must also remove its plan and diagnostics without affecting other components."
   }
 }
 
@@ -835,7 +835,7 @@ run "aks_disabled_independently" {
       length(azurerm_linux_web_app.web) == 1 &&
       length(terraform_data.ansible) == 1
     )
-    error_message = "Desactivar AKS debe retirar todas sus dependencias exclusivas sin afectar las VM ni App Service."
+    error_message = "Disabling AKS must remove all of its dedicated dependencies without affecting VMs or App Service."
   }
 }
 
@@ -878,7 +878,7 @@ run "sentinel_content_disabled_by_default" {
       length(azurerm_resource_group_template_deployment.playbook) == 0 &&
       length(azurerm_machine_learning_workspace.soc) == 0
     )
-    error_message = "El contenido de Sentinel no debe crearse sin habilitar los interruptores correspondientes."
+    error_message = "Sentinel detection, workbook, playbook, and notebook resources must not be created unless explicitly enabled."
   }
 }
 
@@ -892,14 +892,14 @@ run "sentinel_analytics_enabled" {
   assert {
     condition = (
       length(azurerm_sentinel_alert_rule_scheduled.lab) == 13 &&
-      azurerm_sentinel_alert_rule_scheduled.lab["P02"].display_name == "LAB-P02 - Fallos de autenticacion Windows (Fuerza Bruta)" &&
+      azurerm_sentinel_alert_rule_scheduled.lab["P02"].display_name == "LAB-P02 - Windows Authentication Failures (Brute Force)" &&
       azurerm_sentinel_alert_rule_scheduled.lab["P02"].log_analytics_workspace_id == azurerm_log_analytics_workspace.soc.id &&
       azurerm_sentinel_alert_rule_scheduled.lab["P15"].severity == "High" &&
       length(azurerm_application_insights_workbook.soc) == 1 &&
       length(azurerm_sentinel_automation_rule.lab) == 1 &&
       length(azurerm_resource_group_template_deployment.playbook) == 0
     )
-    error_message = "Con enable_sentinel_analytics deben existir las reglas LAB-Pxx, el workbook y la regla de automatizacion, sin playbooks."
+    error_message = "When enable_sentinel_analytics is true, LAB-Pxx rules, the workbook, and the automation rule must exist without playbooks."
   }
 }
 
@@ -918,7 +918,7 @@ run "sentinel_playbooks_enabled" {
       length(azurerm_role_assignment.sentinel_automation) == 1 &&
       azurerm_role_assignment.sentinel_automation[0].role_definition_name == "Microsoft Sentinel Automation Contributor"
     )
-    error_message = "Con enable_sentinel_playbooks deben desplegarse los dos playbooks y sus asignaciones de rol."
+    error_message = "When enable_sentinel_playbooks is true, both playbooks and their RBAC role assignments must be deployed."
   }
 }
 
@@ -949,6 +949,6 @@ run "sentinel_notebooks_enabled" {
       length(azurerm_key_vault.ml) == 1 &&
       length(azurerm_role_assignment.notebook_log_reader) == 1
     )
-    error_message = "Con enable_sentinel_notebooks deben crearse el workspace de Azure ML, la compute instance y sus dependencias."
+    error_message = "When enable_sentinel_notebooks is true, the Azure ML workspace, compute instance, and supporting resources must be created."
   }
 }

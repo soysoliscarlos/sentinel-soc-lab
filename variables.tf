@@ -1,29 +1,29 @@
 variable "ad_domain_name" {
-  description = "Nombre DNS FQDN del nuevo bosque de Active Directory (AD DS) para Windows Server."
+  description = "DNS FQDN of the new Active Directory (AD DS) forest for Windows Server."
   type        = string
   default     = "lab.example.test"
   nullable    = false
 
   validation {
     condition     = can(regex("^[a-zA-Z0-9][-a-zA-Z0-9.]+[a-zA-Z0-9]$", var.ad_domain_name)) && length(var.ad_domain_name) >= 3 && length(var.ad_domain_name) <= 255
-    error_message = "Indica un nombre DNS FQDN valido para el bosque Active Directory."
+    error_message = "Provide a valid DNS FQDN for the Active Directory forest."
   }
 }
 
 variable "ad_domain_netbios" {
-  description = "Nombre NetBIOS del dominio de Active Directory (maximo 15 caracteres alfanumericos en mayusculas)."
+  description = "NetBIOS name of the Active Directory domain (up to 15 uppercase alphanumeric characters)."
   type        = string
   default     = "LAB"
   nullable    = false
 
   validation {
     condition     = can(regex("^[A-Z0-9-]{1,15}$", var.ad_domain_netbios))
-    error_message = "El nombre NetBIOS debe tener entre 1 y 15 caracteres alfanumericos o guion en mayusculas."
+    error_message = "NetBIOS name must be 1 to 15 uppercase alphanumeric characters or hyphens."
   }
 }
 
 variable "admin_source_cidr" {
-  description = "CIDR IPv4 publico autorizado para SSH, RDP, API de AKS y Key Vault; /24 a /32. No usar un CIDR privado."
+  description = "Approved public IPv4 CIDR for SSH, RDP, AKS API, and Key Vault (/24 to /32). Do not use a private CIDR."
   type        = string
   nullable    = false
 
@@ -37,248 +37,248 @@ variable "admin_source_cidr" {
       !can(regex("^(10\\.|127\\.|169\\.254\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.|192\\.168\\.|100\\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\\.)", cidrhost(var.admin_source_cidr, 0))),
       false
     )
-    error_message = "Indica un CIDR IPv4 publico /24 a /32. No se permiten rangos privados, loopback, link-local ni CGNAT."
+    error_message = "Provide a public IPv4 CIDR between /24 and /32. Private, loopback, link-local, and CGNAT ranges are not allowed."
   }
 }
 
 variable "aks_load_balancer_sku" {
-  description = "SKU del balanceador AKS; el laboratorio requiere standard."
+  description = "AKS Load Balancer SKU; this lab requires standard."
   type        = string
   default     = "standard"
 
   validation {
     condition     = var.aks_load_balancer_sku == "standard"
-    error_message = "AKS requiere el balanceador standard en este laboratorio."
+    error_message = "AKS requires the standard load balancer SKU in this lab."
   }
 }
 
 variable "aks_node_count" {
-  description = "Numero fijo de nodos AKS; minimo dos en el pool de sistema."
+  description = "Fixed number of AKS nodes; minimum of two in the system node pool."
   type        = number
   default     = 2
 
   validation {
     condition     = var.aks_node_count >= 2 && var.aks_node_count <= 3 && floor(var.aks_node_count) == var.aks_node_count
-    error_message = "El laboratorio admite dos o tres nodos de sistema."
+    error_message = "This lab supports two or three system nodes."
   }
 }
 
 variable "aks_node_vm_size" {
-  description = "SKU del pool de sistema AKS: minimo 4 vCPU/4 GB, no serie B. Comprobar cuota y disponibilidad."
+  description = "AKS system node pool VM SKU: minimum 4 vCPU / 4 GB, excluding B-series. Check quota and regional availability."
   type        = string
   default     = "Standard_D4s_v6"
 }
 
 variable "aks_os_sku" {
-  description = "SKU del sistema operativo de los nodos AKS; Ubuntu es el perfil validado."
+  description = "AKS node OS SKU; Ubuntu is the validated profile."
   type        = string
   default     = "Ubuntu"
 
   validation {
     condition     = var.aks_os_sku == "Ubuntu"
-    error_message = "El perfil del laboratorio requiere Ubuntu en AKS."
+    error_message = "This lab profile requires Ubuntu on AKS."
   }
 }
 
 variable "aks_sku_tier" {
-  description = "Nivel de administracion AKS; no incluye el costo de los nodos."
+  description = "AKS cluster management tier; excludes node compute costs."
   type        = string
   default     = "Free"
 
   validation {
     condition     = contains(["Free", "Standard", "Premium"], var.aks_sku_tier)
-    error_message = "El nivel AKS debe ser Free, Standard o Premium."
+    error_message = "AKS SKU tier must be Free, Standard, or Premium."
   }
 }
 
 variable "app_service_sku" {
-  description = "SKU de App Service Linux con always-on y diagnosticos; B1 como base del laboratorio."
+  description = "Linux App Service SKU supporting always-on and diagnostics; B1 is the lab baseline."
   type        = string
   default     = "B1"
 
   validation {
     condition     = contains(["B1", "B2", "B3", "S1", "S2", "S3", "P1v3", "P2v3", "P3v3"], var.app_service_sku)
-    error_message = "Usa un SKU Basic, Standard o Premium v3 compatible con el laboratorio."
+    error_message = "Use a Basic, Standard, or Premium v3 SKU compatible with the lab."
   }
 }
 
 variable "create_aks" {
-  description = "Crea AKS y sus recursos exclusivos de identidad, red y monitoreo."
+  description = "Creates AKS and its dedicated identity, networking, and monitoring resources."
   type        = bool
   default     = true
   nullable    = false
 }
 
 variable "create_app_service" {
-  description = "Crea App Service Linux, su plan y sus diagnosticos."
+  description = "Creates Linux App Service, its service plan, and its diagnostic settings."
   type        = bool
   default     = true
   nullable    = false
 }
 
 variable "create_linux_vm" {
-  description = "Crea la VM Linux y sus recursos exclusivos de red, credenciales y monitoreo."
+  description = "Creates the Linux VM and its dedicated networking, credential, and monitoring resources."
   type        = bool
   default     = true
   nullable    = false
 }
 
 variable "create_windows_vm" {
-  description = "Crea la VM Windows y sus recursos exclusivos de red, credenciales y monitoreo."
+  description = "Creates the Windows VM and its dedicated networking, credential, and monitoring resources."
   type        = bool
   default     = true
   nullable    = false
 }
 
 variable "key_vault_name_suffix" {
-  description = "Sufijo del nombre del Key Vault (<name_prefix>-<sufijo>). Cambiarlo reemplaza el vault; util cuando un nombre anterior sigue reservado en soft delete."
+  description = "Key Vault name suffix (<name_prefix>-<suffix>). Changing it replaces the vault; useful when a prior vault name remains reserved in soft delete."
   type        = string
   default     = "kv01"
   nullable    = false
 
   validation {
     condition     = can(regex("^[a-z0-9]{2,4}$", var.key_vault_name_suffix))
-    error_message = "Usa de 2 a 4 minusculas o numeros para que el nombre del vault no supere 24 caracteres."
+    error_message = "Use 2 to 4 lowercase letters or digits so the full vault name does not exceed 24 characters."
   }
 }
 
 variable "key_vault_sku" {
-  description = "SKU de Key Vault; premium agrega soporte HSM para claves."
+  description = "Key Vault SKU; premium adds HSM-backed key support."
   type        = string
   default     = "standard"
 
   validation {
     condition     = contains(["standard", "premium"], var.key_vault_sku)
-    error_message = "El SKU de Key Vault debe ser standard o premium."
+    error_message = "Key Vault SKU must be standard or premium."
   }
 }
 
 variable "kubernetes_version" {
-  description = "Version AKS disponible en la region; null permite que Azure seleccione una version soportada."
+  description = "AKS Kubernetes version available in the region; null lets Azure pick a supported default version."
   type        = string
   default     = null
 }
 
 variable "linux_image_sku" {
-  description = "SKU de imagen Linux dentro de Canonical/0001-com-ubuntu-server-jammy; validar compatibilidad antes de cambiarlo."
+  description = "Linux image SKU within Canonical/0001-com-ubuntu-server-jammy; verify compatibility before changing."
   type        = string
   default     = "22_04-lts-gen2"
 }
 
 variable "linux_os_disk_sku" {
-  description = "Tipo de almacenamiento del disco de sistema Linux."
+  description = "Storage account type for the Linux OS disk."
   type        = string
   default     = "Standard_LRS"
 
   validation {
     condition     = contains(["Standard_LRS", "StandardSSD_LRS", "Premium_LRS", "StandardSSD_ZRS", "Premium_ZRS"], var.linux_os_disk_sku)
-    error_message = "Usa un tipo de disco de sistema compatible: Standard_LRS, StandardSSD_LRS, Premium_LRS, StandardSSD_ZRS o Premium_ZRS."
+    error_message = "Use a supported OS disk type: Standard_LRS, StandardSSD_LRS, Premium_LRS, StandardSSD_ZRS, or Premium_ZRS."
   }
 }
 
 variable "linux_vm_size" {
-  description = "SKU de la VM Ubuntu; validar cuota y disponibilidad en la suscripcion."
+  description = "Ubuntu VM SKU; verify subscription quota and regional availability."
   type        = string
   default     = "Standard_D2s_v6"
 }
 
 variable "location" {
-  description = "Region compartida por los recursos del laboratorio."
+  description = "Azure region shared across all lab resources."
   type        = string
   default     = "eastus2"
 }
 
 variable "log_daily_quota_gb" {
-  description = "Umbral diario de Log Analytics. No es un tope de gasto y puede interrumpir parte de la telemetria."
+  description = "Log Analytics daily ingestion cap in GB. Not a hard billing ceiling and may halt telemetry once reached."
   type        = number
   default     = 1
 
   validation {
     condition     = var.log_daily_quota_gb >= 0.1
-    error_message = "La cuota debe ser al menos 0.1 GB diarios."
+    error_message = "Daily quota must be at least 0.1 GB."
   }
 }
 
 variable "log_retention_days" {
-  description = "Retencion del workspace en dias; validar condiciones y costos de Sentinel."
+  description = "Log Analytics workspace retention in days; verify Sentinel pricing terms."
   type        = number
   default     = 30
 
   validation {
     condition     = var.log_retention_days >= 30 && var.log_retention_days <= 730 && floor(var.log_retention_days) == var.log_retention_days
-    error_message = "La retencion debe ser un entero entre 30 y 730 dias."
+    error_message = "Retention must be an integer between 30 and 730 days."
   }
 }
 
 variable "log_workspace_sku" {
-  description = "SKU del workspace integrado con Sentinel; este laboratorio usa pago por ingesta."
+  description = "Log Analytics workspace SKU integrated with Sentinel; this lab uses pay-as-you-go ingestion."
   type        = string
   default     = "PerGB2018"
 
   validation {
     condition     = var.log_workspace_sku == "PerGB2018"
-    error_message = "El laboratorio requiere PerGB2018; otros niveles necesitan revisar facturacion y configuracion."
+    error_message = "This lab requires PerGB2018; commitment tiers require billing and configuration review."
   }
 }
 
 variable "name_prefix" {
-  description = "Prefijo globalmente unico para el laboratorio y el nombre publico de App Service."
+  description = "Globally unique prefix for lab resources and the public App Service hostname."
   type        = string
   nullable    = false
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]{2,17}[a-z0-9]$", var.name_prefix)) && !strcontains(var.name_prefix, "--")
-    error_message = "Usa de 4 a 19 caracteres: minusculas, numeros y guiones no consecutivos; empieza con letra y termina con letra o numero."
+    error_message = "Use 4 to 19 characters: lowercase letters, digits, and non-consecutive hyphens; start with a letter and end with a letter or digit."
   }
 }
 
 variable "public_ip_sku" {
-  description = "SKU de las IP publicas de las VM; Standard es obligatorio para este perfil."
+  description = "SKU for VM public IP addresses; Standard is required for this profile."
   type        = string
   default     = "Standard"
 
   validation {
     condition     = var.public_ip_sku == "Standard"
-    error_message = "Las IP publicas del laboratorio deben usar Standard."
+    error_message = "Lab public IP addresses must use the Standard SKU."
   }
 }
 
 variable "subscription_id" {
-  description = "ID de la suscripcion destino. El codigo no selecciona una suscripcion implicitamente."
+  description = "Target Azure subscription ID. No implicit subscription selection is used."
   type        = string
   nullable    = false
 
   validation {
     condition     = can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", var.subscription_id))
-    error_message = "Indica un UUID de suscripcion valido."
+    error_message = "Provide a valid subscription UUID."
   }
 }
 
 variable "tags" {
-  description = "Etiquetas adicionales; Environment y ManagedBy permanecen fijadas para el laboratorio."
+  description = "Additional resource tags; Environment, ManagedBy, and Project remain fixed for the lab."
   type        = map(string)
   default     = {}
 }
 
 variable "windows_image_sku" {
-  description = "SKU de imagen Windows dentro de MicrosoftWindowsServer/WindowsServer; validar compatibilidad antes de cambiarlo."
+  description = "Windows image SKU within MicrosoftWindowsServer/WindowsServer; verify compatibility before changing."
   type        = string
   default     = "2022-datacenter-azure-edition"
 }
 
 variable "windows_os_disk_sku" {
-  description = "Tipo de almacenamiento del disco de sistema Windows."
+  description = "Storage account type for the Windows OS disk."
   type        = string
   default     = "Standard_LRS"
 
   validation {
     condition     = contains(["Standard_LRS", "StandardSSD_LRS", "Premium_LRS", "StandardSSD_ZRS", "Premium_ZRS"], var.windows_os_disk_sku)
-    error_message = "Usa un tipo de disco de sistema compatible: Standard_LRS, StandardSSD_LRS, Premium_LRS, StandardSSD_ZRS o Premium_ZRS."
+    error_message = "Use a supported OS disk type: Standard_LRS, StandardSSD_LRS, Premium_LRS, StandardSSD_ZRS, or Premium_ZRS."
   }
 }
 
 variable "windows_vm_size" {
-  description = "SKU de la VM Windows Server."
+  description = "Windows Server VM SKU."
   type        = string
   default     = "Standard_D2s_v6"
 }

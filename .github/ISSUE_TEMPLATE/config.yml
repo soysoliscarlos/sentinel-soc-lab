@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Preguntas y Ayuda Comunitaria
-    url: https://github.com
-    about: Usa la sección de discusiones o revisa SUPPORT.md para dudas conceptuales y de uso.
-  - name: Reporte Privado de Vulnerabilidades
-    url: https://github.com
-    about: Si encontraste una vulnerabilidad de seguridad o fuga de credenciales, revisa SECURITY.md antes de reportar.
+  - name: Questions & Community Help
+    url: https://github.com/soysoliscarlos/sentinel-soc-lab/discussions
+    about: Use GitHub Discussions or check SUPPORT.md for conceptual and usage questions.
+  - name: Private Security Vulnerability Reporting
+    url: https://github.com/soysoliscarlos/sentinel-soc-lab/security/advisories/new
+    about: If you discovered a security vulnerability or credential leak, review SECURITY.md before reporting.

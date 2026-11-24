@@ -1,12 +1,12 @@
 variable "enable_ansible" {
-  description = "Prepara SSH Windows y ejecuta Ansible desde Terraform en Windows con WSL Ubuntu. Requiere autorizacion de cambios y reinicios."
+  description = "Bootstraps Windows OpenSSH and runs Ansible from Terraform on Windows via WSL Ubuntu. Requires authorization for service changes and reboots."
   type        = bool
   default     = false
   nullable    = false
 
   validation {
     condition     = !var.enable_ansible || (var.create_linux_vm && var.create_windows_vm)
-    error_message = "enable_ansible requiere create_linux_vm = true y create_windows_vm = true. Desactiva Ansible para desplegar una sola VM o ninguna."
+    error_message = "enable_ansible requires create_linux_vm = true and create_windows_vm = true. Disable Ansible to deploy a single VM or none."
   }
 }
 
@@ -35,7 +35,7 @@ locals {
       admin_cidr = var.admin_source_cidr
     }),
   ]) : ""
-  # La compresion evita superar los 8191 caracteres de cmd.exe en Custom Script.
+  # Gzip compression keeps the Custom Script Extension command well below cmd.exe's 8,191-character limit.
   windows_configuration_loader = <<-POWERSHELL
     $ErrorActionPreference = 'Stop'
     $bytes = [Convert]::FromBase64String('${base64gzip(local.windows_configuration_script)}')

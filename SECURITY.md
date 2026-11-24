@@ -1,49 +1,51 @@
-# Política de Seguridad
+**English** | [Español](SECURITY.es.md)
 
-La seguridad es el núcleo de este proyecto de laboratorio SOC L2. Nos tomamos muy en serio la protección de las configuraciones, la infraestructura en la nube y los datos de cualquier usuario o entorno de prueba.
+# Security Policy
+
+Security is at the core of this SOC L2 Cyber Range project. We take the protection of configurations, cloud infrastructure, and data across user and lab environments seriously.
 
 ---
 
-## Versiones con soporte
+## Supported Versions
 
-Actualmente, solo la rama principal activa (`main` / `master`) y las versiones de lanzamiento más recientes reciben revisiones y parches de seguridad:
+Currently, only the active default branch (`main` / `master`) and the latest release receive security reviews and patches:
 
-| Versión | ¿Soportada? |
+| Version | Supported |
 | :--- | :--- |
-| Rama `main` (código fuente actual) | :white_check_mark: Sí |
-| Versiones anteriores / ramas de trabajo | :x: No |
+| `main` branch (current source) | :white_check_mark: Yes |
+| Older versions / feature branches | :x: No |
 
 ---
 
-## Reportar una vulnerabilidad
+## Reporting a Vulnerability
 
-**POR FAVOR, NO REPORTES VULNERABILIDADES DE SEGURIDAD MEDIANTE ISSUES PÚBLICOS.**
+**PLEASE DO NOT REPORT SECURITY VULNERABILITIES VIA PUBLIC GITHUB ISSUES.**
 
-Si identificas una vulnerabilidad de seguridad (por ejemplo: exposición involuntaria de credenciales, configuración de red riesgosa por defecto, inyección en scripts o desbordamiento de permisos en Azure RBAC):
+If you identify a security vulnerability (for example: unintended credential exposure, risky default network rules, script command injection, or excessive Azure RBAC privilege escalation):
 
-1. **Usa GitHub Private Vulnerability Reporting** (si está habilitado en este repositorio):
-   - Ve a la pestaña **Security** del repositorio.
-   - Haz clic en **Report a vulnerability** para abrir un aviso confidencial.
-2. **O contacta privadamente al mantenedor del proyecto** mediante los canales de contacto provistos en el perfil del mantenedor en GitHub.
+1. **Use GitHub Private Vulnerability Reporting** (if enabled on this repository):
+   - Go to the repository's **Security** tab.
+   - Click **Report a vulnerability** to open a confidential advisory.
+2. **Or contact the project maintainer privately** using the contact channels listed on the maintainer's GitHub profile.
 
-### Información útil a incluir en el reporte:
-- Descripción detallada de la vulnerabilidad o falla de configuración.
-- Pasos precisos o código Terraform / KQL para reproducir el problema.
-- Escenario de impacto potencial (ej. elevación de privilegios, denegación de servicio, exposición pública de recursos).
-- Propuesta de mitigación o parche sugerido (si lo tienes).
-
----
-
-## Compromiso y tiempos de respuesta
-
-- **Confirmación inicial:** Acuse de recibo en un plazo máximo de 48 a 72 horas laborales.
-- **Evaluación y remediación:** Se evaluará la severidad y se coordinará una solución mediante una rama privada o parche de seguridad.
-- **Divulgación pública:** Se realizará una vez publicado el parche correctivo para que los usuarios puedan actualizar de forma segura.
+### Helpful Information to Include:
+- Detailed description of the vulnerability or misconfiguration.
+- Exact steps or Terraform / KQL / script snippet to reproduce the issue.
+- Potential impact scenario (e.g., privilege escalation, public exposure of lab resources, secret leakage).
+- Suggested mitigation or patch (if available).
 
 ---
 
-## Buenas prácticas recomendadas para usuarios del laboratorio
+## Response Commitment
 
-1. **Nunca subas credenciales reales**: No confirmes archivos `terraform.tfstate`, `*.tfvars` con valores reales, claves privadas SSH ni contraseñas de cuentas de servicio al control de versiones.
-2. **Restricción de NSG e IPs de acceso**: Por defecto, limita los accesos RDP/SSH en [network.tf](network.tf) a tu dirección IP pública de administración en lugar de `0.0.0.0/0`.
-3. **Destrucción de recursos al finalizar prácticas**: Recuerda ejecutar `terraform destroy` o detener las instancias para evitar costos no deseados o superficies de ataque expuestas innecesariamente.
+- **Initial acknowledgment:** Within 48 to 72 business hours.
+- **Assessment and remediation:** Severity will be evaluated and a fix coordinated via a private advisory branch or security patch.
+- **Public disclosure:** Published once the fix is released so users can update safely.
+
+---
+
+## Recommended Security Practices for Lab Operators
+
+1. **Never commit real credentials or state**: Never commit `terraform.tfstate`, `.tfplan`, `*.tfvars` with real values, SSH private keys, or service passwords to version control, and never store state inside cloud-synced folders (OneDrive, Dropbox, Google Drive).
+2. **Restrict NSG and firewall source CIDRs**: Always scope `admin_source_cidr` in `terraform.tfvars` (enforced by [variables.tf](variables.tf) and [network.tf](network.tf)) to your `/32` public IPv4 egress address—never open management ports to `0.0.0.0/0`.
+3. **Tear down resources when finished**: Run `terraform destroy` (or stop compute instances such as Azure ML) after workshops to prevent unintended cloud charges and unnecessary attack surface exposure.

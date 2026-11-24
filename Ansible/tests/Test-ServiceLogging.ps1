@@ -15,7 +15,7 @@ function Import-Module { param($Name, $ErrorAction) }
 function Get-WebConfigurationProperty {
     param($PSPath, $Filter, $Name)
     $value = $global:SocLogTest.Iis[$Name]
-    # Como IIS real: enums/cadenas sin envoltorio; booleanos dentro de ConfigurationAttribute.
+    # Matches live IIS behavior: raw strings/enums for some attributes, ConfigurationAttribute objects for booleans.
     if ($Name -in @('logFormat', 'period', 'logTargetW3C', 'directory')) { return $value }
     return [pscustomobject]@{ Value = $value }
 }
@@ -40,7 +40,7 @@ function auditpol.exe {
         if ($global:SocLogTest.FailBackup) { $global:LASTEXITCODE = 1; return }
         $path = $args[1].Substring('/file:'.Length)
         $global:SocLogTest.TempFiles += $path
-        # Encabezados localizados: solo el GUID y el valor numerico son estables.
+        # Simulates arbitrary localized CSV headers: only column positions for GUID and numeric setting are stable.
         $rows = foreach ($guid in @(
             '{0CCE9235-69AE-11D9-BED3-505054503030}',
             '{0CCE9236-69AE-11D9-BED3-505054503030}',
@@ -51,13 +51,13 @@ function auditpol.exe {
             '{0CCE9242-69AE-11D9-BED3-505054503030}'
         )) {
             [pscustomobject][ordered]@{
-                Equipo = 'LAB'
-                Objetivo = 'Sistema'
-                Subcategoria = 'Localizada'
-                Identificador = $guid
-                Inclusion = 'Exito y error'
-                Exclusion = ''
-                Valor = [int]$global:SocLogTest.Policies[$guid]
+                MachineName = 'LAB'
+                PolicyTarget = 'System'
+                Subcategory = 'LocalizedName'
+                SubcategoryGuid = $guid
+                InclusionSetting = 'Success and Failure'
+                ExclusionSetting = ''
+                SettingValue = [int]$global:SocLogTest.Policies[$guid]
             }
         }
         $rows | Export-Csv -LiteralPath $path -NoTypeInformation
@@ -67,53 +67,53 @@ function auditpol.exe {
         $global:SocLogTest.Policies[$args[1].Substring('/subcategory:'.Length)] = 3
         $global:SocLogTest.Writes++
     }
-    else { throw 'Operacion auditpol inesperada.' }
+    else { throw 'Unexpected auditpol operation.' }
 }
 
 try {
     & $scriptPath
     if (!$global:Ansible.Changed -or $global:SocLogTest.Writes -ne 16) {
-        throw 'No se configuraron seis propiedades IIS, siete politicas y tres canales.'
+        throw 'Expected six IIS properties, seven audit policies, and three event channels to be configured.'
     }
     if ($global:SocLogTest.Iis.logFormat -ne 'W3C' -or
         $global:SocLogTest.Iis.period -ne 'Hourly' -or
         $global:SocLogTest.Iis.directory -ne 'C:\inetpub\logs\LogFiles') {
-        throw 'La configuracion IIS no coincide con la fuente DCR.'
+        throw 'IIS logging configuration does not match the DCR source.'
     }
     $global:SocLogTest.Writes = 0
     & $scriptPath
     if ($global:Ansible.Changed -or $global:SocLogTest.Writes -ne 0) {
-        throw 'La configuracion de logs no es idempotente.'
+        throw 'Service logging configuration is not idempotent.'
     }
     $global:SocLogTest.Iis.period = 'Daily'
     $global:Ansible.CheckMode = $true
     & $scriptPath
     if (!$global:Ansible.Changed -or $global:SocLogTest.Writes -ne 0) {
-        throw 'Check mode debe detectar cambios sin escribir.'
+        throw 'Check mode must detect drift without writing changes.'
     }
     $global:Ansible.CheckMode = $false
     $global:SocLogTest.FailBackup = $true
     $failed = $false
     try { & $scriptPath }
     catch {
-        if ($_.Exception.Message -notlike 'No se pudo consultar*') { throw }
+        if ($_.Exception.Message -notlike 'Failed to query audit policy*') { throw }
         $failed = $true
     }
-    if (!$failed) { throw 'Se oculto un fallo de lectura de auditpol.' }
+    if (!$failed) { throw 'auditpol backup failure was swallowed.' }
     $global:SocLogTest.FailBackup = $false
     $global:SocLogTest.Policies.Clear()
     $global:SocLogTest.FailSet = $true
     $failed = $false
     try { & $scriptPath }
     catch {
-        if ($_.Exception.Message -notlike 'No se pudo activar la auditoria*') { throw }
+        if ($_.Exception.Message -notlike 'Failed to enable audit subcategory*') { throw }
         $failed = $true
     }
-    if (!$failed) { throw 'Se oculto un fallo de escritura de auditpol.' }
+    if (!$failed) { throw 'auditpol set failure was swallowed.' }
     foreach ($path in $global:SocLogTest.TempFiles) {
-        if (Test-Path -LiteralPath $path) { throw 'No se limpio el CSV temporal de auditoria.' }
+        if (Test-Path -LiteralPath $path) { throw 'Temporary auditpol CSV export was not cleaned up.' }
     }
-    Write-Output 'Logs Windows: configuracion IIS/AD, idempotencia, check mode, errores y limpieza correctos con dobles locales.'
+    Write-Output 'Windows service logging: IIS/AD config, idempotency, check mode, error handling, and cleanup verified (offline mock).'
 }
 finally {
     Remove-Variable -Name SocLogTest, Ansible -Scope Global

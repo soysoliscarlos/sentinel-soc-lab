@@ -1,43 +1,45 @@
-# Azure SOC L2 Cyber Range: Threat Detection & Incident Response con IaC
-### Laboratorio Efímero de Ciberseguridad Cloud con Terraform, Ansible y Microsoft Sentinel
+**English** | [Español](README.es.md)
 
-[![Licencia: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+# Azure SOC L2 Cyber Range: Threat Detection & Incident Response with IaC
+### Ephemeral Cloud Cybersecurity Lab with Terraform, Ansible, and Microsoft Sentinel
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Terraform CI](https://github.com/soysoliscarlos/sentinel-soc-lab/actions/workflows/terraform-ci.yml/badge.svg)](.github/workflows/terraform-ci.yml)
 
-> **Repositorio oficial de GitHub:** [https://github.com/soysoliscarlos/sentinel-soc-lab](https://github.com/soysoliscarlos/sentinel-soc-lab)
+> **Official GitHub Repository:** [https://github.com/soysoliscarlos/sentinel-soc-lab](https://github.com/soysoliscarlos/sentinel-soc-lab)
 
-> **Presentación:** este repositorio incluye las diapositivas de la ponencia en PDF: [Bootcamp Analista SOC Nivel 2 2026 - Comunidad DOJO.pdf](slides/Bootcamp%20Analista%20SOC%20Nivel%202%202026%20-%20Comunidad%20DOJO.pdf).
+> **Presentation:** This repository includes the talk slides in PDF (Spanish): [Bootcamp Analista SOC Nivel 2 2026 - Comunidad DOJO.pdf](slides/Bootcamp%20Analista%20SOC%20Nivel%202%202026%20-%20Comunidad%20DOJO.pdf).
 
-Guía operativa propuesta: [cobertura de Sentinel y pruebas controladas](docs/Sentinel-Cobertura-y-pruebas.md), con fuentes pendientes, consultas KQL y ejemplos de incidentes. No añade infraestructura ni ejecuta pruebas sobre Azure.
+Proposed operational guide: [Sentinel coverage and controlled testing](docs/Sentinel-Coverage-and-Testing.md), covering pending log sources, KQL queries, and incident examples. It does not add infrastructure or run tests against Azure.
 
-## Alcance confirmado
+## Confirmed Scope
 
-Código de infraestructura para un laboratorio en `eastus2`. El despliegue base fue iniciado por el usuario; Application Gateway/WAF se ha retirado del código por solicitud del usuario. Este cambio no ejecuta eliminaciones en Azure ni simulaciones. La validación local no demuestra disponibilidad regional, permisos, cuotas ni llegada real de logs.
+Infrastructure code for a lab in `eastus2`. The baseline deployment was initiated by the user; Application Gateway/WAF was removed from the code at the user's request. This change does not run deletions in Azure or simulations. Local validation does not prove regional availability, permissions, quotas, or actual log delivery.
 
-| Componente | Configuración inicial | Telemetría al workspace de Sentinel |
+| Component | Initial Configuration | Telemetry to Sentinel Workspace |
 | --- | --- | --- |
-| Ubuntu 22.04 LTS | D2s_v6, clave SSH, IP pública Standard estática | AMA + DCR: `Syslog` de autenticación, daemon, kernel y sistema; `Heartbeat`. Con Ansible: Apache `local6` y PostgreSQL `local5`, preparado sin aplicar |
-| Windows Server 2022 | D2s_v6, RDP, IP pública Standard estática | AMA + DCR: `SecurityEvent`, errores/advertencias de System y Application en `Event`; `Heartbeat`. Auditoría de logon/procesos y argumentos de 4688 preparada. Con Ansible: IIS `W3CIISLog` y auditoría/canales AD DS, sin aplicar |
-| App Service Linux | Plan B1, endpoint HTTPS, sin aplicación desplegada | HTTP, consola, auditoría de publicación, restricciones IP y plataforma en tablas `AppService*` |
-| AKS | Free, 2 nodos D4s_v6, Azure CNI Overlay, Entra ID y Azure RBAC | Container Insights: `ContainerLogV2`, `KubeEvents`, `KubePodInventory`; diagnósticos: `AKSAuditAdmin` y `AKSControlPlane`. Se añade `guard` al código, aún sin aplicar |
-| Log Analytics | PerGB2018, 30 días, umbral de 1 GB/día, autenticación local deshabilitada | Workspace único para todos los orígenes |
-| Microsoft Sentinel | Onboarding dedicado sobre el workspace | Datos consultables; no incluye reglas analíticas ni playbooks |
-| Key Vault Standard | Private Endpoint y DNS privado; endpoint público restringido a `admin_source_cidr`, con RBAC | Auditoría `AuditEvent` hacia `AZKVAuditLogs` |
-| Azure Activity | Diagnóstico de la suscripción, ocho categorías | `AzureActivity`, incluye recursos ajenos al laboratorio dentro de la misma suscripción |
+| Ubuntu 22.04 LTS | D2s_v6, SSH key, static Standard public IP | AMA + DCR: authentication, daemon, kernel, and system `Syslog`; `Heartbeat`. With Ansible: Apache `local6` and PostgreSQL `local5`, prepared without applying |
+| Windows Server 2022 | D2s_v6, RDP, static Standard public IP | AMA + DCR: `SecurityEvent`, System and Application errors/warnings in `Event`; `Heartbeat`. Logon/process auditing and 4688 command-line arguments prepared. With Ansible: IIS `W3CIISLog` and AD DS auditing/channels, not yet applied |
+| App Service Linux | B1 plan, HTTPS endpoint, no deployed application | HTTP, console, publish audit, IP restrictions, and platform logs in `AppService*` tables |
+| AKS | Free tier, 2 D4s_v6 nodes, Azure CNI Overlay, Entra ID, and Azure RBAC | Container Insights: `ContainerLogV2`, `KubeEvents`, `KubePodInventory`; diagnostics: `AKSAuditAdmin` and `AKSControlPlane`. `guard` added to code, not yet applied |
+| Log Analytics | PerGB2018, 30 days, 1 GB/day cap, local authentication disabled | Single shared workspace for all sources |
+| Microsoft Sentinel | Dedicated onboarding on the workspace | Queryable data; base onboarding does not include analytic rules or playbooks |
+| Key Vault Standard | Private Endpoint and Private DNS; public endpoint restricted to `admin_source_cidr`, with RBAC | `AuditEvent` auditing to `AZKVAuditLogs` |
+| Azure Activity | Subscription diagnostic setting, eight categories | `AzureActivity`, includes non-lab resources within the same subscription |
 
-**Cambio confirmado durante el diseño:** se sustituyó el perfil inicial de un nodo D2 por dos nodos D4s_v5 (luego D4s_v6) para respetar los requisitos vigentes del pool de sistema AKS: mínimo dos nodos y SKU de al menos 4 vCPU/4 GB, sin serie B. Free solo se refiere al nivel de administración del clúster, no a los nodos ni al resto de recursos.
+**Confirmed design change:** the initial single D2 node profile was replaced with two D4s_v5 (later D4s_v6) nodes to comply with current AKS system node pool requirements: minimum two nodes and at least a 4 vCPU / 4 GB SKU, excluding B-series. Free refers only to the cluster management tier, not to the nodes or other resources.
 
-**Ajuste tras el primer apply (2026-10-22):** en la suscripción destino, eastus2 devuelve `NotAvailableForSubscription` para las series B y Dv5 (las VM fallaron con `SkuNotAvailable` y AKS rechazó D4s_v5). Las VM pasan a `Standard_D2s_v6` y AKS a `Standard_D4s_v6`, que sí están disponibles salvo en la zona 2 (el código no fija zonas). La familia Dsv6 tiene cuota de 350 vCPU y el límite regional es de 65 vCPU; el stack usa 12 (+4 durante actualizaciones de AKS). Comprobar antes de cambiar tamaños con `az vm list-skus --location eastus2 --size <SKU> --all -o table` y `az vm list-usage --location eastus2 -o table`.
+**Adjustment after the first apply (2026-10-22):** in the target subscription, `eastus2` returns `NotAvailableForSubscription` for B-series and Dv5-series (VMs failed with `SkuNotAvailable` and AKS rejected D4s_v5). VMs switched to `Standard_D2s_v6` and AKS to `Standard_D4s_v6`, which are available except in zone 2 (the code does not pin availability zones). The Dsv6 family has a 350 vCPU quota and the regional total vCPU limit is 65; the stack uses 12 (+4 surge during AKS upgrades). Check before changing VM sizes with `az vm list-skus --location eastus2 --size <SKU> --all -o table` and `az vm list-usage --location eastus2 -o table`.
 
-Terraform administra infraestructura, identidades, roles, agentes AMA y recolección. Cloud-init garantiza `rsyslog` en Ubuntu. Una extensión Custom Script configura auditoría de logon/procesos Windows mediante [Configure-WindowsAudit.ps1](scripts/Configure-WindowsAudit.ps1), pendiente de aplicar. [Ansible invocado desde Terraform](Ansible/README.md) instala IIS y un bosque AD `lab.example.test` en Windows, y Apache/PostgreSQL en Ubuntu. `enable_ansible` conserva `false` como valor por defecto, pero **está activado en las entradas del laboratorio; no se ejecutó contra Azure en este cambio**. Su preparación SSH se integra en la misma extensión Windows, preservando la auditoría.
+Terraform manages infrastructure, identities, roles, AMA agents, and collection rules. Cloud-init ensures `rsyslog` on Ubuntu. A Custom Script Extension configures Windows logon/process auditing via [Configure-WindowsAudit.ps1](scripts/Configure-WindowsAudit.ps1), pending apply. [Ansible invoked from Terraform](Ansible/README.md) installs IIS and a `lab.example.test` AD forest on Windows, and Apache/PostgreSQL on Ubuntu. `enable_ansible` defaults to `false`, but **is enabled in the lab inputs; it has not been executed against Azure in this change**. Its SSH bootstrap is integrated into the same Windows extension, preserving the audit configuration.
 
-Tras instalar y verificar los servicios, Ansible configura sus logs y Terraform amplía las DCR existentes hacia el mismo workspace: IIS W3C, auditoría/canales AD DS, archivos Apache por rsyslog y PostgreSQL por Syslog. **SQL completo autorizado mediante `log_statement='all'`: puede registrar secretos y datos personales y aumentar mucho la ingesta.** No se deshabilitan la cuota ni la retención existentes; revisar [rutas, límites y consultas de verificación](Ansible/README.md#telemetría-y-referencias). Quedan fuera Sysmon, las políticas de auditoría no declaradas, aplicaciones, workloads Kubernetes y simulaciones. Defender for Servers, las reglas de detección y las hunting queries son opt-in y se describen en la sección «Contenido de Sentinel».
+After installing and verifying services, Ansible configures their logs and Terraform expands the existing DCRs to the same workspace: IIS W3C, AD DS auditing/channels, Apache log files via rsyslog, and PostgreSQL via Syslog. **Full SQL logging is authorized via `log_statement='all'`: it may record secrets and personal data and significantly increase ingestion.** Existing daily caps and retention are not disabled; review [paths, limits, and verification queries](Ansible/README.md#telemetry-and-references). Out of scope: Sysmon, undeclared audit policies, custom applications, Kubernetes user workloads, and attack simulations. Defender for Servers, detection rules, and hunting queries are opt-in and described under "Sentinel Content".
 
-No se crean conectores heredados de Azure Activity ni agentes MMA/OMS en las VM. El bloque Terraform `oms_agent` es el nombre conservado por AzureRM para el complemento de monitoreo AKS con autenticación por identidad administrada; se configura además su DCR y asociación explícita. El onboarding no instala soluciones de Content Hub ni configura conectores de Entra/Microsoft 365.
+No legacy Azure Activity connectors or MMA/OMS agents are created on VMs. The Terraform `oms_agent` block is the legacy AzureRM schema name for the AKS monitoring add-on using managed identity authentication; its explicit DCR and association are also configured. Onboarding does not install Content Hub solutions or configure Entra ID / Microsoft 365 connectors.
 
-### Creación opcional de componentes
+### Optional Component Creation
 
-Los cuatro interruptores booleanos de [terraform.tfvars](terraform.tfvars) conservan `true` por defecto:
+The four boolean switches in [terraform.tfvars](terraform.tfvars) default to `true`:
 
 ```hcl
 create_app_service = true
@@ -46,50 +48,50 @@ create_windows_vm  = true
 create_aks         = true
 ```
 
-Cada `false` excluye el componente y sus dependencias exclusivas: plan de App Service; IP, NIC, NSG, credenciales, extensiones y DCR de cada VM; subred, identidad, roles y Container Insights de AKS. La subred de VM se conserva mientras haya al menos una VM habilitada. Los outputs del componente desactivado son `null` (Terraform no los muestra).
+Each `false` excludes the component and its dedicated dependencies: App Service plan; each VM's public IP, NIC, NSG, credentials, extensions, and DCR; AKS subnet, identity, roles, and Container Insights. The VM subnet is kept as long as at least one VM is enabled. Disabled component outputs evaluate to `null` (omitted by Terraform).
 
-Por decisión confirmada, `enable_ansible = true` **requiere ambas VM habilitadas**; la validación rechaza cualquier otra combinación. Para omitir una VM, establecer también `enable_ansible = false`. Los servicios compartidos (grupo, VNet, Key Vault con Private Endpoint/DNS, Log Analytics, Sentinel y Azure Activity) permanecen y pueden generar cargos.
+By confirmed design, `enable_ansible = true` **requires both VMs enabled**; validation rejects any other combination. To skip a VM, also set `enable_ansible = false`. Shared services (resource group, VNet, Key Vault with Private Endpoint/DNS, Log Analytics, Sentinel, and Azure Activity) remain active and may incur charges.
 
-**Un `false` no pausa un recurso existente: Terraform propondrá eliminarlo en el siguiente plan/apply.** Revisar costos, permisos, pérdida de datos y el plan antes de aplicar. [moved.tf](moved.tf) migra las direcciones originales a las instancias condicionales `[0]`, evitando reemplazos causados únicamente por esta refactorización si el componente sigue habilitado. No modifica directamente el estado ni se ha aplicado contra Azure.
+**Setting `false` does not pause an existing resource: Terraform will propose destroying it on the next plan/apply.** Review costs, permissions, data loss, and the execution plan before applying. Conditional `[0]` instances avoid unnecessary replacements when components remain enabled.
 
-### Generación de logs al final del despliegue
+### Log Generation at the End of Deployment
 
-[log_generation.tf](log_generation.tf) define `terraform_data.log_generation`, que ejecuta [Invoke-SocLabLogGeneration.ps1](scripts/Invoke-SocLabLogGeneration.ps1) con `local-exec` como **último paso del apply**. Depende de:
+[log_generation.tf](log_generation.tf) defines `terraform_data.log_generation`, which runs [Invoke-SocLabLogGeneration.ps1](scripts/Invoke-SocLabLogGeneration.ps1) via `local-exec` as the **final step of `apply`**. It depends on:
 
-- Ansible y las extensiones AMA, incluida la auditoría Windows.
-- Las tres asociaciones DCR (Linux, Windows y AKS).
-- Los diagnostic settings de App Service, AKS, Key Vault y Activity Log.
-- El onboarding de Sentinel y los roles de AKS y Key Vault.
+- Ansible and AMA extensions, including Windows auditing.
+- All three DCR associations (Linux, Windows, and AKS).
+- Diagnostic settings for App Service, AKS, Key Vault, and Activity Log.
+- Sentinel onboarding and AKS / Key Vault role assignments.
 
-Que los recursos existan no garantiza que ya envíen datos. Por eso el script espera primero el `Heartbeat` de las VM presentes y el `KubePodInventory` de AKS si existe y está seleccionado, hasta `log_generation_wait_minutes` (30). Después espera `log_generation_initial_delay_seconds` (300) para los diagnostic settings recién creados. Si una fuente no responde a tiempo, falla sin generar actividad. Los grupos sin recurso se informan como `Omitida`; `WebServers` requiere ambas VM y `Arm` usa la VM Linux. P07 lista los metadatos de secretos y solo lee `linux-ssh-public-key` si existe; sin Linux genera únicamente SecretList y SecretGet fallido sobre un nombre inexistente, sin leer contraseñas.
+Resource creation alone does not guarantee telemetry is flowing yet. Therefore, the script first waits for `Heartbeat` from enabled VMs and `KubePodInventory` from AKS (if present and selected), up to `log_generation_wait_minutes` (30). Next, it waits `log_generation_initial_delay_seconds` (300) for newly created diagnostic settings to start exporting. If a source does not report in time, it fails without generating test activity. Resource-less groups are reported as `Skipped`; `WebServers` requires both VMs and `Arm` uses the Linux VM. P07 lists secret metadata and reads `linux-ssh-public-key` only if it exists; without Linux it generates only `SecretList` and a failed `SecretGet` on a nonexistent secret name, never reading passwords.
 
-Cada ejecución produce actividad variada y benigna: en Windows varios 4625 con usuarios inexistentes (P02), varios procesos 4688 (P03) y el ciclo de vida de cuentas/grupos de dominio desechables (P15: 4720/4722/4724/4725/4726/4727/4728/4729/4730/4732/4733/4738 y 4776), creados y eliminados dentro del mismo paso; en Linux `logger` en varias facilidades (P04) y SSH/`su` fallidos con usuarios inexistentes (P04B). P15 requiere que la VM Windows sea controlador de dominio (módulo `ActiveDirectory`).
+Each run produces varied, benign activity: on Windows, multiple 4625 events with nonexistent users (P02), multiple 4688 processes (P03), and disposable domain user/group lifecycle events (P15: 4720/4722/4724/4725/4726/4727/4728/4729/4730/4732/4733/4738 and 4776), created and deleted within the same step; on Linux, `logger` entries across facilities (P04) and failed SSH/`su` attempts with nonexistent users (P04B). P15 requires the Windows VM to be a domain controller (`ActiveDirectory` module).
 
-| Variable | Valor por defecto | Uso |
+| Variable | Default | Purpose |
 | --- | --- | --- |
-| `enable_log_generation` | `false` (activada en `terraform.tfvars`) | Opt-in de la simulación |
+| `enable_log_generation` | `false` (enabled in `terraform.tfvars`) | Opt-in benign activity generation |
 | `log_generation_tests` | `["All"]` | `Windows`, `Linux`, `WebServers`, `AppService`, `KeyVault`, `Arm`, `Aks` |
-| `log_generation_verify` | `true` | Consulta cada marcador; la ingesta pendiente se informa y no falla el apply |
-| `log_generation_trigger` | `"inicial"` | Cambiarlo repite las pruebas en el siguiente apply |
+| `log_generation_verify` | `true` | Queries each marker; pending ingestion is reported without failing `apply` |
+| `log_generation_trigger` | `"initial"` | Changing this re-runs the tests on the next `apply` |
 
-Requisitos del equipo que ejecuta Terraform:
-- Azure CLI con sesión iniciada en la suscripción.
+Requirements on the machine running Terraform:
+- Azure CLI logged into the target subscription.
 - Windows PowerShell.
-- La IP de `admin_source_cidr`, que necesitan HTTP, Key Vault y la API de AKS.
+- Egress from `admin_source_cidr`, required by HTTP, Key Vault, and the AKS API.
 
-Se ejecuta solo al crearse el recurso, o cuando cambian el disparador, las pruebas, el script o una asociación/diagnóstico. Con un error de generación, el apply falla y Terraform repite el recurso en el siguiente apply. La prueba P09 cambia una etiqueta fuera de Terraform y la restaura en el mismo paso, por lo que no deja deriva.
+It runs only on creation, or when the trigger, selected tests, script, or any DCR association/diagnostic setting changes. If generation fails, `apply` fails and Terraform retries the resource on the next `apply`. Test P09 updates a tag outside Terraform and restores it within the same step, leaving no drift.
 
-## Contenido de Sentinel
+## Sentinel Content
 
-Además del onboarding, el repositorio puede desplegar contenido de Sentinel que **muestra los eventos que genera el script** ([sentinel.tf](sentinel.tf), [sentinel_playbooks.tf](sentinel_playbooks.tf), [sentinel_notebooks.tf](sentinel_notebooks.tf)). Todo es **opt-in** y está desactivado por defecto; `terraform.tfvars` lo activa para el taller.
+Beyond onboarding, this repository can deploy Sentinel content that **surfaces the events generated by the script** ([sentinel.tf](sentinel.tf), [sentinel_playbooks.tf](sentinel_playbooks.tf), [sentinel_notebooks.tf](sentinel_notebooks.tf)). Everything is **opt-in** and disabled by default; `terraform.tfvars` enables it for the workshop.
 
-| Interruptor | Defecto | Qué crea | Requisitos |
+| Switch | Default | What It Creates | Prerequisites |
 | --- | --- | --- | --- |
-| `enable_sentinel_analytics` | `false` (activado en `terraform.tfvars`) | 13 reglas analíticas programadas `LAB-Pxx`, un workbook, 2 hunting queries (HUNT-01/HUNT-02, en `sentinel_hunting.tf`) y una regla de automatización | Onboarding de Sentinel |
-| `enable_sentinel_playbooks` | `false` (activado en `terraform.tfvars`) | 2 playbooks (Logic Apps) y sus asignaciones de rol | Requiere `enable_sentinel_analytics`; RP `Microsoft.Logic` y `Microsoft.Web` |
-| `enable_sentinel_notebooks` | `false` (activado en `terraform.tfvars`) | Workspace de Azure ML (storage, Key Vault, App Insights) y una compute instance | RP `Microsoft.MachineLearningServices` |
+| `enable_sentinel_analytics` | `false` (enabled in `terraform.tfvars`) | 13 scheduled `LAB-Pxx` analytic rules, 1 workbook, 2 hunting queries (HUNT-01/HUNT-02 in `sentinel_hunting.tf`), and 1 automation rule | Sentinel onboarding |
+| `enable_sentinel_playbooks` | `false` (enabled in `terraform.tfvars`) | 2 playbooks (Logic Apps) and their role assignments | Requires `enable_sentinel_analytics`; `Microsoft.Logic` and `Microsoft.Web` RPs |
+| `enable_sentinel_notebooks` | `false` (enabled in `terraform.tfvars`) | Azure ML workspace (Storage, Key Vault, App Insights) and a compute instance | `Microsoft.MachineLearningServices` RP |
 
-Como el proveedor usa `resource_provider_registrations = "none"`, antes de un apply con playbooks o notebooks hay que registrar manualmente los RP:
+Because the provider sets `resource_provider_registrations = "none"`, register the required RPs manually before running `apply` with playbooks or notebooks enabled:
 
 ```powershell
 az provider register --namespace Microsoft.Logic
@@ -97,156 +99,156 @@ az provider register --namespace Microsoft.Web
 az provider register --namespace Microsoft.MachineLearningServices
 ```
 
-### Reglas analíticas y workbook
+### Analytic Rules and Workbook
 
-Cada regla consulta el marcador de una prueba y crea un incidente `LAB-Pxx`. Los nombres de regla, workbook y regla de automatización son GUID (`random_uuid`), como exige la API. Están configuradas con frecuencia `PT5M` (evaluación cada 5 minutos) y severidades `High` / `Medium` para que los incidentes tengan un *Priority Score* $\ge 15$ y aparezcan de forma directa en el portal unificado de Microsoft Defender XDR (**Casos / Incidentes**) sin ser excluidos por el filtro predeterminado `Priority score: 15 - 100`.
+Each rule queries a test marker and creates a `LAB-Pxx` incident. Rule, workbook, and automation rule resource names are GUIDs (`random_uuid`), as required by the API. They are configured with `PT5M` frequency (evaluated every 5 minutes) and `High` / `Medium` severities so incidents receive a *Priority Score* $\ge 15$ and appear directly in the unified Microsoft Defender XDR portal (**Incidents**) without being hidden by the default `Priority score: 15 - 100` filter.
 
-| Regla | Severidad | Prueba y marcador que detecta |
+| Rule | Severity | Test and Marker Detected |
 | --- | --- | --- |
-| `LAB-P02 - Fallos de autenticacion Windows (Fuerza Bruta)` | High | 4625 con cuentas inexistentes `soc-l2-p02-*` ($\ge 2$ intentos) |
-| `LAB-P15 - Gestion anomala de cuentas y grupos AD` | High | Altas/cambios/bajas de cuentas y grupos desechables `SOCp15/SOCg15` |
-| `LAB-P03 - Ejecucion de procesos sospechosos en Windows` | Medium | 4688 con la línea de comandos `SOC-L2-P03` |
-| `LAB-P04B - Fuerza bruta SSH y su en Linux` | High | SSH y `su` con usuarios inexistentes `socp04*` |
-| `LAB-P05 - Escaneo web y reconocimiento en App Service` | Medium | Rutas/métodos sospechosos con User-Agent `SOC-L2-Lab` |
-| `LAB-P07 - Acceso no autorizado o denegado en Key Vault` | Medium | Lectura fallida del secreto inexistente `soc-l2-p07` |
-| `LAB-P08 - Modificaciones administrativas en Kubernetes` | Medium | Creación de objetos en el namespace `soc-l2-p08` (auditoría admin de AKS) |
-| `LAB-P09 - Modificacion sospechosa de etiquetas ARM` | Medium | Modificación no autorizada de etiqueta `SOCPrueba` en `AzureActivity` |
-| `LAB-P10 - Evento de advertencia en pods de AKS` | Medium | Eventos Warning de Kubernetes en `KubeEvents` por pods de prueba |
-| `LAB-P11 - Peticion HTTP anomala en servidor Apache` | Medium | Solicitudes HTTP marcadas hacia Apache en `Syslog local6` |
-| `LAB-P12 - Peticion HTTP sospechosa en servidor IIS` | Medium | Sondeo o acceso web marcado en `W3CIISLog` |
-| `LAB-P13 - Fallo de autenticacion en base de datos PostgreSQL` | Medium | Intentos fallidos de conexión con usuario inválido en `Syslog local5` |
-| `LAB-P14 - Evento sospechoso en Application Log de Windows` | Medium | Evento de advertencia generado por `SOC-L2-Lab` en `Event` |
+| `LAB-P02 - Windows Authentication Failures (Brute Force)` | High | 4625 with nonexistent `soc-l2-p02-*` accounts ($\ge 2$ attempts) |
+| `LAB-P15 - Anomalous AD Account and Group Management` | High | Creation/modification/deletion of disposable `SOCp15/SOCg15` accounts and groups |
+| `LAB-P03 - Suspicious Process Execution on Windows` | Medium | 4688 containing `SOC-L2-P03` in `CommandLine` |
+| `LAB-P04B - Linux SSH and su Brute Force` | High | Failed SSH and `su` attempts with nonexistent `socp04*` users |
+| `LAB-P05 - Web Scanning and Reconnaissance on App Service` | Medium | Suspicious paths/methods with `SOC-L2-Lab` User-Agent |
+| `LAB-P07 - Unauthorized or Denied Access in Key Vault` | Medium | Failed read of nonexistent secret `soc-l2-p07` |
+| `LAB-P08 - Kubernetes Administrative Modifications` | Medium | Object creation/modification in namespace `soc-l2-p08` (AKS admin audit) |
+| `LAB-P09 - Suspicious ARM Tag Modification` | Medium | Unauthorized `SOCPrueba` tag modification in `AzureActivity` |
+| `LAB-P10 - Warning Event in AKS Pods` | Medium | Kubernetes `Warning` events in `KubeEvents` from test pods |
+| `LAB-P11 - Anomalous HTTP Request on Apache Server` | Medium | Marked HTTP requests to Apache in `Syslog local6` |
+| `LAB-P12 - Suspicious HTTP Request on IIS Server` | Medium | Marked web probe or access in `W3CIISLog` |
+| `LAB-P13 - PostgreSQL Database Authentication Failure` | Medium | Failed connection attempts with invalid user in `Syslog local5` |
+| `LAB-P14 - Suspicious Event in Windows Application Log` | Medium | Warning event generated by source `SOC-L2-Lab` in `Event` |
 
-El workbook `SOC L2 Lab - Eventos de seguridad generados` ([files/soc-workbook.json](files/soc-workbook.json)) agrupa paneles por prueba con un parámetro de rango de tiempo. Se abre en **Sentinel > Workbooks > Mis workbooks** o **Azure Monitor > Workbooks**.
+The workbook `SOC L2 Lab - Generated Security Events` ([files/soc-workbook.json](files/soc-workbook.json)) groups panels by test with a time-range parameter. Open it under **Sentinel > Workbooks > My workbooks** or **Azure Monitor > Workbooks**.
 
-### Playbooks y automatización
+### Playbooks and Automation
 
-Se despliegan como plantillas ARM ([files/playbook-enrich-comment.json](files/playbook-enrich-comment.json) y [files/playbook-tag-triage.json](files/playbook-tag-triage.json)) porque la conexión con identidad administrada no es expresable con `azurerm_api_connection`:
+Playbooks are deployed as ARM templates ([files/playbook-enrich-comment.json](files/playbook-enrich-comment.json) and [files/playbook-tag-triage.json](files/playbook-tag-triage.json)) because managed-identity API connections cannot be natively expressed with `azurerm_api_connection`:
 
-- **enrich** agrega un comentario de enriquecimiento al incidente.
-- **triage** marca el incidente como `Active` y añade las etiquetas `SOC-L2-Lab` y `Taller`.
+- **enrich** adds an enrichment comment to the incident.
+- **triage** sets the incident status to `Active` and adds the `SOC-L2-Lab` and `Workshop` labels.
 
-La regla de automatización `LAB - Etiquetar y enriquecer incidentes del taller` filtra por título que contiene `LAB-`, añade la etiqueta `SOC-L2-Lab` (orden 1) y ejecuta los dos playbooks (orden 2 y 3). Asignaciones de rol creadas:
+The automation rule `LAB - Tag and Enrich Workshop Incidents` filters on incident titles containing `LAB-`, adds the `SOC-L2-Lab` label (order 1), and runs both playbooks (order 2 and 3). Role assignments created:
 
-- Cada playbook (su identidad administrada): **Microsoft Sentinel Responder** sobre el grupo.
-- El service principal de Sentinel (`Azure Security Insights`): **Microsoft Sentinel Automation Contributor** sobre el grupo, necesario para que la regla invoque los playbooks.
+- Each playbook (its system-assigned managed identity): **Microsoft Sentinel Responder** on the resource group.
+- Sentinel's service principal (`Azure Security Insights`): **Microsoft Sentinel Automation Contributor** on the resource group, required for automation rules to invoke playbooks.
 
-> **Pendiente de verificar en el portal:** las rutas del conector (`/Incidents/Comment`, `PUT /Incidents`) y la forma de `tagsToAdd` siguen la convención de playbooks exportados, pero no están verificadas contra este tenant. Tras el primer apply conviene abrir cada Logic App, autorizar la conexión `azuresentinel` y validar que las acciones se ejecutan, ajustando el JSON si el portal lo requiere.
+> **Pending verification in the portal:** the connector paths (`/Incidents/Comment`, `PUT /Incidents`) and the `tagsToAdd` payload follow exported playbook conventions, but have not been verified against this tenant. After the first `apply`, open each Logic App, authorize the `azuresentinel` connection if prompted, and verify that actions run cleanly, adjusting the JSON if required by the portal.
 
 ### Notebooks (Azure Machine Learning)
 
-[sentinel_notebooks.tf](sentinel_notebooks.tf) crea un workspace de Azure ML con su storage, Key Vault y Application Insights, más una compute instance (`Standard_DS2_v2` por defecto, variable `sentinel_notebook_compute_size`). La identidad administrada de la compute instance recibe **Log Analytics Reader** sobre `soc-l2-law` para que los notebooks consulten con `DefaultAzureCredential`.
+[sentinel_notebooks.tf](sentinel_notebooks.tf) creates an Azure ML workspace with its Storage Account, Key Vault, and Application Insights, plus a compute instance (`Standard_DS2_v2` by default, variable `sentinel_notebook_compute_size`). The compute instance's managed identity receives **Log Analytics Reader** on `soc-l2-law` so notebooks can query logs via `DefaultAzureCredential`.
 
-Los tres notebooks ([SOC-L2-Eventos.ipynb](notebooks/SOC-L2-Eventos.ipynb), [SOC-L2-Caza.ipynb](notebooks/SOC-L2-Caza.ipynb) y [SOC-L2-Analisis-Logs.ipynb](notebooks/SOC-L2-Analisis-Logs.ipynb)) se suben automáticamente al file share del workspace mediante `terraform_data.upload_notebooks` (que usa `az storage file upload`, por lo que requiere Azure CLI autenticado). Si la subida falla, pueden cargarse a mano en **Azure ML Studio > Notebooks**.
+All three notebooks ([SOC-L2-Events.ipynb](notebooks/SOC-L2-Events.ipynb), [SOC-L2-Hunting.ipynb](notebooks/SOC-L2-Hunting.ipynb), and [SOC-L2-Log-Analysis.ipynb](notebooks/SOC-L2-Log-Analysis.ipynb)) are automatically uploaded to the workspace file share via `terraform_data.upload_notebooks` (using `az storage file upload`, which requires an authenticated Azure CLI). If upload fails, you can upload them manually in **Azure ML Studio > Notebooks**.
 
-### Defender for Servers y hunting queries
+### Defender for Servers and Hunting Queries
 
-- [defender.tf](defender.tf): con `enable_defender_for_servers` activa Defender for Servers (subplan P1/P2 según variable), la integración WDATP (`azurerm_security_center_setting`) y las extensiones MDE.Windows / MDE.Linux. **El alcance es toda la suscripción y genera costo**; revisar antes de aplicar.
-- [sentinel_hunting.tf](sentinel_hunting.tf): 2 saved searches (HUNT-01 y HUNT-02) para caza manual, condicionadas a `enable_sentinel_analytics`.
+- [defender.tf](defender.tf): `enable_defender_for_servers` enables Defender for Servers (P1/P2 subplan per variable), WDATP integration (`azurerm_security_center_setting`), and the `MDE.Windows` / `MDE.Linux` extensions. **This setting applies to the entire subscription and incurs charges**; review before applying.
+- [sentinel_hunting.tf](sentinel_hunting.tf): 2 saved searches (HUNT-01 and HUNT-02) for proactive threat hunting, gated by `enable_sentinel_analytics`.
 
-> **Costo:** la compute instance **factura por hora mientras está encendida** y no tiene apagado automático en el provider. Detenerla manualmente en el portal o programar un apagado cuando no se use. Las cuotas de la familia de VM deben validarse antes de cambiar el tamaño.
+> **Cost note:** the compute instance **bills hourly while running** and has no auto-shutdown setting in the provider. Stop it manually in the portal or configure an auto-shutdown schedule when not in use. Validate VM family quotas before changing sizes.
 
+## Live Verification of Connections and Ingestion
 
+Read-only review conducted on the night of 2026-10-22, with records up to approximately **2026-10-23 02:14 UTC**. Verified resource group `soc-l2-rg`, managed resource group `MC_soc-l2-rg_soc-l2-aks_eastus2`, and workspace `soc-l2-law`; Sentinel has `default` onboarding. No changes were applied and no synthetic test events were generated during that review.
 
-Revisión de solo lectura del 2026-10-22 por la noche, con registros hasta aproximadamente **2026-10-23 02:14 UTC**. Se verificaron el grupo `soc-l2-rg`, el grupo administrado `MC_soc-l2-rg_soc-l2-aks_eastus2` y el workspace `soc-l2-law`; Sentinel tiene onboarding `default`. No se aplicaron cambios ni se generaron eventos de prueba.
+- Both AMA extensions report `Succeeded`, with valid DCR associations targeting the shared workspace. Source `_ResourceId` values were verified, not just table names.
+- AKS is `Running`/`Succeeded`, with Container Insights enabled, managed identity authentication, and valid DCR/association. Both nodes send `Heartbeat`.
+- App Service, Key Vault, and AKS diagnostic settings point to the workspace with `Dedicated` destination type. Subscription Activity Log exports all eight expected categories.
+- The workspace retains 30 days, a 1 GB/day quota, and `RespectQuota` ingestion status at the time of review. This does not guarantee the cap will not be reached later.
 
-- Ambas extensiones AMA están en `Succeeded`, con DCR/asociación correcta y destino en el mismo workspace. Se comprobó el recurso de origen de los eventos, no solo el nombre de la tabla.
-- AKS está `Running`/`Succeeded`, con Container Insights habilitado, autenticación administrada y DCR/asociación correcta. Reciben Heartbeat los dos nodos.
-- Diagnósticos de App Service, Key Vault y AKS apuntan al workspace con destino `Dedicated`. Activity Log de suscripción envía las ocho categorías esperadas.
-- El workspace conserva 30 días, cuota de 1 GB/día y estado de ingesta `RespectQuota` durante la revisión. Esto no garantiza que no alcance la cuota más adelante.
-
-| Origen | Evidencia real en las últimas 24 h | Conclusión y límite |
+| Source | Live Evidence (Last 24h) | Conclusion and Limitation |
 | --- | --- | --- |
-| Ubuntu `soc-l2-linux` | `Heartbeat` y `Syslog` con su `_ResourceId` | Conexión e ingesta comprobadas; no equivale a auditd de procesos/archivos |
-| Windows `soc-l2-windows` / `soc-win` | `Heartbeat`, 253 `SecurityEvent` y 2 `Event` | Conexión e ingesta comprobadas. Los 221 eventos 4688 consultados no incluyen `CommandLine`; se prepara corrección |
-| App Service `soc-l2-web` | 56 HTTP, 99 consola, 32 restricciones IP y 270 plataforma | Cuatro rutas comprobadas; auditoría de publicación está configurada, pero sin eventos: no se acredita su entrega extremo a extremo |
-| AKS `soc-l2-aks` | 12 421 `AKSAuditAdmin`, 394 control plane, 27 `KubeEvents`, 336 `KubePodInventory`, Heartbeat de dos nodos | Ingesta comprobada de esas fuentes. `ContainerLogV2` sin eventos; inventario reciente solo de `kube-system`, cuyos stdout/stderr se excluyen por defecto salvo configuración adicional |
-| Key Vault `soc-l2-kv01` | 7 `AZKVAuditLogs` | Auditoría con ID de vault correcto; no se leyeron secretos para esta revisión |
-| Recursos de soporte y grupo administrado AKS | `AzureActivity` con operaciones de ambos grupos | Cobertura de cambios ARM para VNet, NSG, NIC, IP, discos, DNS privado, Private Endpoint, identidades, plan y recursos administrados; no es cobertura de tráfico o de contenido |
+| Ubuntu `soc-l2-linux` | `Heartbeat` and `Syslog` with matching `_ResourceId` | Connection and ingestion verified; does not replace `auditd` for process/file auditing |
+| Windows `soc-l2-windows` / `soc-win` | `Heartbeat`, 253 `SecurityEvent`, and 2 `Event` | Connection and ingestion verified. None of the 221 queried 4688 events included `CommandLine`; fix prepared |
+| App Service `soc-l2-web` | 56 HTTP, 99 console, 32 IP restriction, and 270 platform logs | Four paths verified; publish auditing is configured, but without events end-to-end delivery is unconfirmed |
+| AKS `soc-l2-aks` | 12,421 `AKSAuditAdmin`, 394 control plane, 27 `KubeEvents`, 336 `KubePodInventory`, 2 node Heartbeats | Ingestion verified for those sources. `ContainerLogV2` had zero events; recent inventory only showed `kube-system`, whose stdout/stderr are excluded by default unless configured otherwise |
+| Key Vault `soc-l2-kv01` | 7 `AZKVAuditLogs` | Auditing with matching vault ID; no secrets were read during this review |
+| Support resources and AKS managed group | `AzureActivity` showing operations in both resource groups | ARM control-plane coverage for VNet, NSG, NIC, IP, disks, Private DNS, Private Endpoint, identities, plan, and managed resources; does not cover network traffic or data plane |
 
-Los conteos son una instantánea de una consulta, no umbrales de salud ni garantía de cobertura futura. No se ejecutó una publicación ni se desplegó un workload para forzar eventos. Se necesita una prueba autorizada con una aplicación/contenedor no sistémico para validar las rutas silenciosas.
+Counts represent a single point-in-time query snapshot, not health thresholds or a guarantee of future coverage. No app publish or workload deployment was executed to force events. An authorized test with a non-system application/container is needed to validate silent paths.
 
-**Cambios preparados, no aplicados:**
+**Prepared changes (pending apply):**
 
-1. Se incorpora la categoría AKS `guard` a los diagnósticos, para no omitir esa señal de autenticación. No activa el conector de Entra ID del tenant ni incluye lecturas `get/list` de Kubernetes.
-2. La extensión `ConfigureWindowsAudit` habilita Logon y Process Creation por GUID independientes del idioma, prioriza subcategorías avanzadas y activa `ProcessCreationIncludeCmdLine_Enabled`. El script falla explícitamente si `auditpol` o el registro fallan. No habilita Sysmon, Script Block Logging ni todas las políticas de cuentas.
-3. [Pruebas Terraform](tests/lab.tftest.hcl) verifican destinos, asociaciones, categorías completas, streams/fuentes, esquemas dedicados y la extensión. La ampliación de Ansible/logs lleva la validación local a **16 pruebas aprobadas**, con proveedores simulados, además de `terraform fmt -check` y `terraform validate`. Los scripts Windows se comprueban con comandos simulados; no acredita ingesta de los servicios recién configurados.
+1. Added AKS diagnostic category `guard` to capture authentication telemetry. Does not enable the tenant Entra ID connector or include Kubernetes `get`/`list` read events.
+2. Extension `ConfigureWindowsAudit` enables Logon and Process Creation by language-independent GUIDs, prioritizes advanced audit subcategories, and sets `ProcessCreationIncludeCmdLine_Enabled`. The script fails explicitly if `auditpol` or registry updates fail. Does not enable Sysmon, PowerShell Script Block Logging, or full account management policies.
+3. [Terraform tests](tests/lab.tftest.hcl) verify destinations, associations, full categories, streams/sources, dedicated schemas, and the audit extension. Adding Ansible/logging brings local validation to **mock-provider test runs**, alongside `terraform fmt -check` and `terraform validate`. Windows scripts are tested with local doubles; this does not prove live ingestion from newly configured services.
 
-La extensión ejecuta la configuración dentro de la VM como SYSTEM al aplicar Terraform; no necesita Ansible ni un servicio nuevo. **Los argumentos de procesos quedarán en texto plano en los logs**, por lo que no deben contener secretos. Revisar acceso al workspace y posibles GPO que sobrescriban la política. Eliminar la extensión no revierte las políticas; cualquier reversión debe ser explícita. La nueva categoría puede incrementar ingesta y costo aunque no se habilite ningún plan de pago adicional.
+The extension runs inside the VM as `SYSTEM` during `terraform apply`; it does not require Ansible or an extra service. **Process command-line arguments will be recorded in cleartext in logs**, so never pass secrets on the command line. Review workspace access and any GPOs that might overwrite local audit policy. Removing the extension does not revert audit policies; any rollback must be explicit. Enabling additional categories can increase ingestion and cost even without adding paid plans.
 
-Para verificar posteriormente la corrección Windows, sin generar nuevos eventos:
+To verify the Windows fix later without generating artificial events:
 
 ```kusto
 SecurityEvent
 | where TimeGenerated > ago(30m)
 | where Computer startswith "soc-win" and EventID == 4688
-| summarize Procesos=count(), ConArgumentos=countif(isnotempty(CommandLine))
+| summarize Processes=count(), WithArguments=countif(isnotempty(CommandLine))
 ```
 
-Acotar la ventana al periodo posterior a aplicar la extensión. Cero eventos no prueba el resultado; si hay procesos nuevos pero ninguno tiene argumentos, investigar la política y el XML local antes de dar la corrección por validada.
+Scope the time window to after the extension is applied. Zero events do not prove anything; if new 4688 events arrive without `CommandLine`, inspect local policy and event XML before considering the fix verified.
 
-**Fuera de esta cobertura:** no hay flujos de red/paquetes, Entra ID del tenant, Defender, Sysmon ni auditoría completa de lecturas AKS. Las métricas de los recursos no se exportan indiscriminadamente a Log Analytics. Ningún diagnóstico por recurso puede sustituir estas fuentes. Se encontró una política residual `soc-l2-waf` en Azure, pero no un Application Gateway: no demuestra protección ni telemetría WAF y no se modifica en esta revisión.
+**Out of scope for this baseline coverage:** network/packet flow logs, tenant-level Entra ID logs, Defender plans (unless opted in), Sysmon, and full AKS `kube-audit` read logs. Resource metrics are not indiscriminately exported to Log Analytics. Per-resource diagnostics cannot substitute for those sources. A residual `soc-l2-waf` policy was observed in Azure without an Application Gateway: it provides no active protection or WAF telemetry and is untouched by this review.
 
-## Red y acceso
+## Network and Access
 
-- VNet `10.20.0.0/16`, subred de VM `10.20.1.0/24` y subred AKS `10.20.2.0/24`. Pods `10.244.0.0/16`, servicios `10.30.0.0/16`.
-- Cada NIC de VM tiene su propio NSG: por defecto solo SSH o RDP desde `admin_source_cidr`; se deniega todo otro ingreso, también lateral desde la VNet. Con `enable_ansible = true` se permite además SSH Windows y HTTP de ambas VM desde ese mismo CIDR, y Windows recibe la IP privada fija `10.20.1.10`. No se exponen PostgreSQL ni puertos AD. El firewall del SO sigue aplicando.
-- `admin_source_cidr` es obligatorio, IPv4 público, entre /24 y /32; se recomienda la IP de salida real del administrador en /32. `10.10.0.0/16` se descartó porque no identifica el origen público de una conexión a Internet.
-- La API de AKS usa ese mismo CIDR, con cuentas locales deshabilitadas. El nodo no tiene IP pública individual; AKS usa Standard Load Balancer para salida.
-- App Service tiene acceso público directo por HTTPS, sin Application Gateway, WAF, Private Endpoint ni integración VNet. SCM/Kudu no hereda restricciones de una subred del Gateway.
-- AMA y AKS acceden a los endpoints públicos de Azure Monitor. No bloquear salida a Entra ID, Azure Monitor, ARM, repositorios e infraestructura AKS; no hay Firewall, NAT Gateway ni Bastion adicionales.
-- El workspace permite ingesta/consulta de red pública autenticada; no permite consultas anónimas. No hay AMPLS/Private Link.
-- Key Vault tiene un Private Endpoint en `10.20.3.0/24` y la zona `privatelink.vaultcore.azure.net` vinculada a la VNet. Desde ella se usa el nombre normal del vault, resuelto a su IP privada. El endpoint público permanece habilitado solo para `admin_source_cidr`, con `default_action = "Deny"` y sin bypass de servicios Azure. Esta excepción no restringe el tráfico que entra por Private Endpoint: sigue siendo obligatorio autorizarlo mediante RBAC.
+- VNet `10.20.0.0/16`, VM subnet `10.20.1.0/24`, and AKS subnet `10.20.2.0/24`. Pods `10.244.0.0/16`, services `10.30.0.0/16`.
+- Each VM NIC has its own NSG: by default only SSH or RDP from `admin_source_cidr` is allowed; all other inbound traffic—including lateral VNet traffic—is denied. With `enable_ansible = true`, Windows SSH and HTTP on both VMs are also allowed from that same CIDR, and Windows receives static private IP `10.20.1.10`. PostgreSQL and AD ports are never exposed. Guest OS firewalls remain enforced.
+- `admin_source_cidr` is required, public IPv4, `/24` to `/32`; using the administrator's exact `/32` egress IP is recommended. `10.10.0.0/16` was rejected because private ranges do not identify Internet egress.
+- The AKS API server restricts access to that same CIDR with local accounts disabled. Nodes have no individual public IPs; AKS uses a Standard Load Balancer for outbound traffic.
+- App Service allows direct public HTTPS access, without Application Gateway, WAF, Private Endpoint, or VNet integration. SCM/Kudu does not inherit restrictions from a removed Gateway subnet.
+- AMA and AKS connect to public Azure Monitor endpoints. Do not block outbound traffic to Entra ID, Azure Monitor, ARM, package repositories, or AKS control-plane endpoints; there is no Azure Firewall, NAT Gateway, or Bastion.
+- The Log Analytics workspace allows authenticated public network ingestion and querying; anonymous queries are not possible. No AMPLS / Private Link Scope is deployed.
+- Key Vault has a Private Endpoint in `10.20.3.0/24` and links `privatelink.vaultcore.azure.net` to the VNet. Resources inside the VNet resolve the standard vault hostname to its private IP. The public endpoint remains enabled exclusively for `admin_source_cidr`, with `default_action = "Deny"` and `bypass = "None"`. Network access via Private Endpoint does not bypass authorization: explicit Azure RBAC roles are still mandatory.
 
-## Requisitos completos para construir y configurar el laboratorio
+## Complete Requirements to Build and Configure the Lab
 
-Para desplegar y operar con éxito este laboratorio SOC L2 de punta a punta, se deben cumplir los siguientes requisitos en Azure (Tenant, Suscripción, Roles, Proveedores y Cuotas), en el entorno local del operador (Herramientas, CLI, Kubernetes, Ansible en WSL) y en la configuración de seguridad.
+To deploy and operate this end-to-end SOC L2 lab, meet the following requirements across Azure (Tenant, Subscription, RBAC Roles, Resource Providers, and Quotas), the operator workstation (CLI tools, Kubernetes tools, WSL Ansible), and Terraform state security.
 
-### 1. Requisitos de Tenant y Cuenta de Microsoft Entra ID
-- **Identidad de acceso:** Una cuenta de usuario o Entra ID Service Principal (SPN) con credenciales activas para iniciar sesión vía Azure CLI (`az login`).
-- **Object ID:** Terraform captura automáticamente el `object_id` de la identidad autenticada (`data.azurerm_client_config.current.object_id`) para asignarle permisos administrativos en Azure Kubernetes Service (AKS) y Azure Key Vault.
-- **Permisos en el Tenant:**
-  - Para desplegar la infraestructura base, monitoreo, Sentinel, Azure ML y playbooks **no se requiere ser Global Administrator** del Tenant; basta con tener los roles adecuados en la suscripción de Azure.
-  - *Nota opcional:* Solo si en el futuro se desea otorgar consentimiento de administrador para consultas directas a Microsoft Graph API o habilitar conectores de nivel de inquilino (Entra ID audit logs a Sentinel), se requeriría el rol *Global Administrator* o *Security Administrator* de Entra ID.
+### 1. Microsoft Entra ID Tenant & Account Requirements
+- **Access Identity:** A user account or Entra ID Service Principal (SPN) with active credentials to sign in via Azure CLI (`az login`).
+- **Object ID:** Terraform automatically reads the authenticated identity's `object_id` (`data.azurerm_client_config.current.object_id`) to grant administrative RBAC roles on AKS and Azure Key Vault.
+- **Tenant Permissions:**
+  - Deploying base infrastructure, monitoring, Sentinel, Azure ML, and playbooks **does not require Global Administrator**; subscription-level RBAC roles are sufficient.
+  - *Optional note:* Only granting tenant-wide admin consent for Microsoft Graph API queries or enabling tenant-level connectors (e.g., Entra ID Sign-in/Audit logs in Sentinel) would require *Global Administrator* or *Security Administrator*.
 
-### 2. Requisitos de Suscripción de Azure
-- **Tipo de Suscripción:** Se recomienda enfáticamente utilizar una suscripción de Azure **dedicada y exclusiva para el laboratorio** (Pay-As-You-Go, Microsoft Azure Sponsorship, Visual Studio Enterprise o suscripción de pruebas MVP/Partner).
-- **Aislamiento de alcance:** Varios recursos del laboratorio tienen impacto a nivel de suscripción:
-  - `AzureActivity`: El diagnóstico de auditoría recolecta operaciones de todos los grupos de recursos de la suscripción hacia el workspace `soc-l2-law`.
-  - `Microsoft Defender for Servers`: Con `enable_defender_for_servers = true`, la activación del Plan 1 o Plan 2 aplica sobre **todas las máquinas virtuales** existentes en la suscripción.
-  - Purga de Key Vault: La purga definitiva de vaults eliminados (`Microsoft.KeyVault/locations/deletedVaults/purge/action`) durante `terraform destroy` exige permisos con alcance de suscripción.
+### 2. Azure Subscription Requirements
+- **Subscription Type:** A **dedicated lab-only Azure subscription** is strongly recommended (Pay-As-You-Go, Microsoft Azure Sponsorship, Visual Studio Enterprise, or MVP/Partner test subscription).
+- **Scope Isolation:** Several lab resources affect the entire subscription:
+  - `AzureActivity`: Subscription audit diagnostics export operations across all resource groups in the subscription to `soc-l2-law`.
+  - `Microsoft Defender for Servers`: When `enable_defender_for_servers = true`, enabling Plan 1 or Plan 2 applies to **every virtual machine** in the subscription.
+  - Key Vault Purge: Permanently purging soft-deleted vaults (`Microsoft.KeyVault/locations/deletedVaults/purge/action`) during `terraform destroy` requires subscription-scoped permissions.
 
-### 3. Roles y Permisos RBAC de Azure Requeridos
-La identidad que ejecuta Terraform (`az login`) debe poseer los siguientes roles asignados sobre la suscripción:
-- **Rol principal:** `Contributor` (Colaborador) sobre la suscripción (o sobre el Resource Group si este se precrea, aunque el diagnóstico de suscripción exige alcance de suscripción).
-- **Rol de administración de acceso:** `User Access Administrator` o `Role Based Access Control Administrator` sobre la suscripción o grupo de recursos. Este rol es **indispensable** porque Terraform realiza asignaciones de rol RBAC automáticas:
-  - A la identidad de la Compute Instance de Azure ML: `Log Analytics Reader` sobre el workspace.
-  - A las identidades administradas de las Logic Apps (Playbooks): `Microsoft Sentinel Responder`.
-  - Al Service Principal nativo de Sentinel (`Azure Security Insights`): `Microsoft Sentinel Automation Contributor`.
-  - A la propia identidad del ejecutor: `Azure Kubernetes Service RBAC Cluster Admin` y `Key Vault Secrets Officer`.
-- *Alternativa directa:* El rol **`Owner`** (Propietario) sobre la suscripción reúne ambos permisos (Contributor + User Access Administrator).
-- **Permiso para destrucción y purga:** Para ejecutar `terraform destroy` y purgar el Key Vault, la identidad necesita `Microsoft.KeyVault/locations/deletedVaults/purge/action` a nivel de suscripción (incluido en `Contributor` o `Key Vault Contributor`).
+### 3. Required Azure RBAC Roles and Permissions
+The identity running Terraform (`az login`) must hold the following roles on the subscription:
+- **Primary Role:** `Contributor` on the subscription (subscription scope is required for `AzureActivity` diagnostic settings).
+- **Access Management Role:** `User Access Administrator` or `Role Based Access Control Administrator` on the subscription or resource group. This is **mandatory** because Terraform creates RBAC role assignments automatically:
+  - Azure ML Compute Instance identity: `Log Analytics Reader` on the workspace.
+  - Logic App (Playbook) managed identities: `Microsoft Sentinel Responder`.
+  - Sentinel native Service Principal (`Azure Security Insights`): `Microsoft Sentinel Automation Contributor`.
+  - Executing operator identity: `Azure Kubernetes Service RBAC Cluster Admin` and `Key Vault Secrets Officer`.
+- *Direct Alternative:* **`Owner`** on the subscription encompasses both `Contributor` and `User Access Administrator`.
+- **Destroy and Purge Permission:** Running `terraform destroy` and purging Key Vault requires `Microsoft.KeyVault/locations/deletedVaults/purge/action` at the subscription level (included in `Contributor` or `Key Vault Contributor`).
 
-### 4. Proveedores de Recursos de Azure (Resource Providers)
-Dado que [providers.tf](providers.tf) tiene configurado `resource_provider_registrations = "none"` para evitar bloqueos por falta de permisos de registro en tiempo de ejecución, **todos los proveedores requeridos deben estar previamente registrados** en la suscripción.
+### 4. Azure Resource Providers
+Because [providers.tf](providers.tf) sets `resource_provider_registrations = "none"` to prevent runtime registration failures when running with least-privilege accounts, **all required Resource Providers must be registered beforehand** in the subscription.
 
-| Resource Provider | Propósito en el Laboratorio | Archivo Terraform |
+| Resource Provider | Lab Purpose | Terraform File |
 | --- | --- | --- |
-| `Microsoft.Compute` | Máquinas virtuales Windows y Linux, extensiones AMA y Custom Script | `compute.tf` |
-| `Microsoft.Network` | VNet, Subredes, NSGs, IPs públicas, DNS Privado, Private Endpoint, Load Balancer | `network.tf` |
-| `Microsoft.OperationalInsights` | Workspace central de Log Analytics (`soc-l2-law`) | `monitoring.tf` |
-| `Microsoft.OperationsManagement` | Soluciones de monitoreo y extensiones OMS | `monitoring.tf` |
-| `Microsoft.SecurityInsights` | Microsoft Sentinel, Onboarding, Reglas analíticas y Reglas de automatización | `sentinel.tf` |
-| `Microsoft.Insights` | Azure Monitor Agent (AMA), Data Collection Rules (DCR), Application Insights | `monitoring.tf` |
-| `Microsoft.Web` | Azure App Service Linux y flujos de trabajo de Logic Apps (Playbooks) | `app_service.tf`, `sentinel_playbooks.tf` |
-| `Microsoft.ContainerService` | Clúster de Kubernetes (AKS) y Container Insights | `aks.tf` |
-| `Microsoft.ManagedIdentity` | Identidades administradas asignadas por usuario (AKS, VMs) | `aks.tf`, `compute.tf` |
-| `Microsoft.KeyVault` | Almacén de claves, certificados y secretos con Private Endpoint | `key_vault.tf` |
-| `Microsoft.Security` | Microsoft Defender for Cloud, Defender for Servers y WDATP | `defender.tf` |
-| `Microsoft.Logic` | Motor de ejecución de Logic Apps para respuesta automatizada (SOAR) | `sentinel_playbooks.tf` |
-| `Microsoft.MachineLearningServices` | Workspace de Azure ML y Compute Instance para Jupyter Notebooks | `sentinel_notebooks.tf` |
+| `Microsoft.Compute` | Windows and Linux VMs, AMA and Custom Script extensions | `compute.tf` |
+| `Microsoft.Network` | VNet, Subnets, NSGs, Public IPs, Private DNS, Private Endpoint, Load Balancer | `network.tf` |
+| `Microsoft.OperationalInsights` | Central Log Analytics Workspace (`soc-l2-law`) | `monitoring.tf` |
+| `Microsoft.OperationsManagement` | Monitoring solutions and Container Insights | `main.tf` |
+| `Microsoft.SecurityInsights` | Microsoft Sentinel onboarding, analytic rules, and automation rules | `main.tf`, `sentinel.tf` |
+| `Microsoft.Insights` | Azure Monitor Agent (AMA), Data Collection Rules (DCR), Application Insights | `monitoring.tf`, `sentinel_notebooks.tf` |
+| `Microsoft.Web` | Azure App Service Linux and Logic App API connections | `app_service.tf`, `sentinel_playbooks.tf` |
+| `Microsoft.ContainerService` | Azure Kubernetes Service (AKS) cluster | `aks.tf` |
+| `Microsoft.ManagedIdentity` | User-assigned managed identities (AKS) | `aks.tf` |
+| `Microsoft.KeyVault` | Key, certificate, and secret vaults with Private Endpoint | `key_vault.tf`, `sentinel_notebooks.tf` |
+| `Microsoft.Security` | Microsoft Defender for Cloud, Defender for Servers, and WDATP | `defender.tf` |
+| `Microsoft.Logic` | Logic Apps workflow engine for automated SOAR response | `sentinel_playbooks.tf` |
+| `Microsoft.MachineLearningServices` | Azure ML Workspace and Compute Instance for Jupyter Notebooks | `sentinel_notebooks.tf` |
 
-**Script de validación y registro en PowerShell:**
+**PowerShell validation and registration script:**
 ```powershell
 $providers = @(
   "Microsoft.Compute", "Microsoft.Network", "Microsoft.OperationalInsights",
@@ -257,24 +259,24 @@ $providers = @(
 foreach ($p in $providers) {
   $state = (az provider show --namespace $p --query "registrationState" -o tsv 2>$null)
   if ($state -ne "Registered") {
-    Write-Host "Registrando proveedor: $p..." -ForegroundColor Yellow
+    Write-Host "Registering provider: $p..." -ForegroundColor Yellow
     az provider register --namespace $p --wait
   } else {
-    Write-Host "Proveedor ya registrado: $p" -ForegroundColor Green
+    Write-Host "Provider already registered: $p" -ForegroundColor Green
   }
 }
 ```
 
-### 5. Cuotas de Cómputo y Límites de Capacidad Regional
-Verificar que la región objetivo (por defecto `eastus2`) disponga de cuota y capacidad suficiente antes del despliegue:
-- **Familia `Standard_Dsv6`:**
-  - 2 x VM `Standard_D2s_v6` = 4 vCPUs.
-  - 2 x Nodos AKS `Standard_D4s_v6` = 8 vCPUs (más 4 vCPUs de margen temporal durante actualizaciones/surge = hasta 12 vCPUs).
-  - *Total familia Dsv6:* Mínimo **12 a 16 vCPUs** disponibles.
-- **Familia `Standard_DSv2` (para Azure ML):**
-  - 1 x Compute Instance `Standard_DS2_v2` = 2 vCPUs.
-- **Direcciones IP Públicas Standard:** Mínimo **2 a 3 IPs públicas** (Ubuntu, Windows y Load Balancer de salida de AKS).
-- **Validación previa:**
+### 5. Compute Quotas and Regional Capacity Limits
+Verify that the target region (`eastus2` by default) has sufficient vCPU quota and SKU availability prior to deployment:
+- **`Standard_Dsv6` family:**
+  - 2 x `Standard_D2s_v6` VMs = 4 vCPUs.
+  - 2 x `Standard_D4s_v6` AKS nodes = 8 vCPUs (plus 4 temporary surge vCPUs during upgrades = up to 12 vCPUs).
+  - *Total Dsv6 family:* Minimum **12 to 16 vCPUs** available.
+- **`Standard_DSv2` family (for Azure ML):**
+  - 1 x `Standard_DS2_v2` Compute Instance = 2 vCPUs.
+- **Standard Public IP Addresses:** Minimum **2 to 3 Public IPs** (Ubuntu, Windows, and AKS outbound Load Balancer).
+- **Pre-flight checks:**
 ```powershell
 az vm list-usage --location eastus2 -o table
 az vm list-skus --location eastus2 --size Standard_D2s_v6 --all -o table
@@ -282,84 +284,82 @@ az vm list-skus --location eastus2 --size Standard_D4s_v6 --all -o table
 az aks get-versions --location eastus2 -o table
 ```
 
-### 6. Requisitos del Entorno Local (Estación de Trabajo)
-El equipo desde el cual se clona y ejecuta el proyecto requiere:
-- **Sistema Operativo:** Windows 10/11 (con PowerShell 5.1 o PowerShell 7+) o Linux (Ubuntu 22.04+ / Debian / Fedora).
-- **Herramientas de Infraestructura:**
-  - **Terraform:** versión `>= 1.9.0` y `< 2.0.0` (probado con v1.9 y v1.10).
-  - **Azure CLI (`az`):** versión `>= 2.60.0`. Sesión iniciada con `az login` y suscripción seleccionada con `az account set --subscription "<subscription-id>"`.
-  - **Git:** Para clonar y versionar el repositorio.
-- **Herramientas de Kubernetes:**
-  - **`kubectl`:** Para interactuar con el clúster AKS.
-  - **`kubelogin`:** Imprescindible para autenticarse contra el API Server de AKS con Azure RBAC y Entra ID (`kubelogin convert-kubeconfig -l azurecli`).
-- **Conectividad de Red del Administrador:**
-  - Obtener la IP pública real de salida (IPv4) del operador y configurarla en `terraform.tfvars`:
+### 6. Local Workstation Requirements
+The operator machine cloning and running the project requires:
+- **Operating System:** Windows 10/11 (with Windows PowerShell 5.1 or PowerShell 7+) or Linux (Ubuntu 22.04+ / Debian / Fedora, if not using the Windows WSL Ansible launcher).
+- **Infrastructure Tools:**
+  - **Terraform:** `>= 1.7.5` and `< 2.0.0` (tested with v1.9 and v1.10).
+  - **Azure CLI (`az`):** `>= 2.60.0`. Signed in via `az login` with target subscription selected via `az account set --subscription "<subscription-id>"`.
+  - **Git:** To clone and manage the repository.
+- **Kubernetes Tools:**
+  - **`kubectl`:** To interact with the AKS cluster.
+  - **`kubelogin`:** Required for Entra ID + Azure RBAC authentication against the AKS API server (`kubelogin convert-kubeconfig -l azurecli`).
+- **Administrator Network Connectivity:**
+  - Obtain the operator's real public IPv4 egress address and set it in `terraform.tfvars`:
     ```hcl
-    admin_source_cidr = "203.0.113.45/32" # Reemplazar con tu IP pública /32
+    admin_source_cidr = "203.0.113.45/32" # Replace with your /32 public IP
     ```
-  - *Regla:* El firewall de Key Vault, los NSG de las VM y la API de AKS solo permiten conexiones provenientes de este CIDR.
+  - *Rule:* The Key Vault firewall, VM NSGs, and AKS API server only allow connections originating from this CIDR.
 
-### 7. Requisitos para Ansible (`enable_ansible = true`)
-Si se activa la configuración automatizada de servicios (Active Directory, IIS, Apache y PostgreSQL) mediante [ansible.tf](ansible.tf) y [Ansible/](Ansible/):
-- **Ejecución desde Windows (Vía WSL 2):**
-  - Requiere **WSL 2** con una distribución llamada exactamente `Ubuntu`.
-  - El lanzador [Invoke-Ansible.ps1](Ansible/Invoke-Ansible.ps1) invoca `wsl -d Ubuntu` para ejecutar el script Python [run.py](Ansible/run.py) y el playbook [site.yml](Ansible/site.yml).
-  - En la distribución WSL Ubuntu se requiere:
-    - **Python 3.12 o superior** con módulo `venv`: `sudo apt-get install -y python3-venv openssh-client`
-    - Entorno virtual en `~/.venvs/soc-ansible`:
+### 7. Ansible Requirements (`enable_ansible = true`)
+If automated service configuration (Active Directory, IIS, Apache, and PostgreSQL) is enabled via [ansible.tf](ansible.tf) and [Ansible/](Ansible/README.md):
+- **Execution from Windows (via WSL 2):**
+  - Requires **WSL 2** with a distribution named `Ubuntu`.
+  - Launcher [Invoke-Ansible.ps1](Ansible/Invoke-Ansible.ps1) invokes `wsl -d Ubuntu` to run Python wrapper [run.py](Ansible/run.py) and playbook [site.yml](Ansible/site.yml).
+  - Inside WSL Ubuntu:
+    - **Python 3.12+** with `venv` and `openssh-client`: `sudo apt-get install -y python3-venv openssh-client`
+    - Virtual environment at `~/.venvs/soc-ansible`:
       ```bash
       python3 -m venv ~/.venvs/soc-ansible
       ~/.venvs/soc-ansible/bin/python -m pip install -r Ansible/requirements.txt
       ~/.venvs/soc-ansible/bin/ansible-galaxy collection install -r Ansible/requirements.yml
       ```
-    - Colecciones requeridas: `ansible.windows`, `community.windows`, `community.general`, `community.postgresql`.
-    - Módulos Python requeridos: `ansible-core`, `pywinrm`, `psycopg2-binary`.
-- **Condición de Terraform:**
-  - `enable_ansible = true` **exige obligatoriamente** `create_linux_vm = true` y `create_windows_vm = true`.
-- **Conectividad SSH:** WSL debe tener salida a internet por TCP/22 hacia las IPs públicas de ambas VMs.
+    - Required Ansible collections (declared in [Ansible/requirements.yml](Ansible/requirements.yml)): `ansible.windows`, `community.windows`, `microsoft.ad`.
+- **Terraform Condition:**
+  - `enable_ansible = true` **strictly requires** `create_linux_vm = true` and `create_windows_vm = true`.
+- **SSH Connectivity:** WSL must have outbound TCP/22 access to the public IPs of both VMs.
 
-### 8. Requisitos para Azure Machine Learning y Notebooks (`enable_sentinel_notebooks = true`)
-- **Infraestructura:** Creación del workspace de Azure ML, Key Vault dedicado, App Insights y Storage Account (`socl2mlsa`).
-- **Compute Instance:** Creación de `soc-l2-ci` (tamaño `Standard_DS2_v2`).
-- **Librerías Python en el kernel de Azure ML:**
-  - Los cuadernos ([SOC-L2-Eventos.ipynb](notebooks/SOC-L2-Eventos.ipynb), [SOC-L2-Caza.ipynb](notebooks/SOC-L2-Caza.ipynb) y [SOC-L2-Analisis-Logs.ipynb](notebooks/SOC-L2-Analisis-Logs.ipynb)) utilizan:
-    `azure-identity`, `azure-monitor-query`, `pandas`, `matplotlib`.
-  - La primera celda de cada cuaderno incluye `%pip install -q azure-identity azure-monitor-query pandas matplotlib` para autoinstalarse en el kernel `Python 3.10 - AzureML`.
-- **Credenciales Zero-Trust:** La autenticación se realiza mediante `DefaultAzureCredential()` utilizando la identidad administrada asignada por el sistema de la Compute Instance, que posee el rol `Log Analytics Reader` sobre `soc-l2-law`.
+### 8. Azure Machine Learning & Notebook Requirements (`enable_sentinel_notebooks = true`)
+- **Infrastructure:** Deploys Azure ML workspace, dedicated Key Vault, Application Insights, and Storage Account (`<prefix>mlsa`).
+- **Compute Instance:** Deploys `<prefix>-ci` (`Standard_DS2_v2`).
+- **Python Libraries in Azure ML Kernel:**
+  - Notebooks ([SOC-L2-Events.ipynb](notebooks/SOC-L2-Events.ipynb), [SOC-L2-Hunting.ipynb](notebooks/SOC-L2-Hunting.ipynb), and [SOC-L2-Log-Analysis.ipynb](notebooks/SOC-L2-Log-Analysis.ipynb)) use `azure-identity`, `azure-monitor-query`, `pandas`, and `matplotlib`.
+  - The first code cell runs `%pip install -q azure-identity azure-monitor-query pandas matplotlib` for self-contained setup in the Azure ML Python kernel.
+- **Zero-Trust Credentials:** Authentication uses `DefaultAzureCredential()` backed by the Compute Instance's system-assigned managed identity, granted `Log Analytics Reader` on `soc-l2-law`.
 
-### 9. Requisitos para Playbooks y SOAR (`enable_sentinel_playbooks = true`)
-- **Proveedores de Recursos:** `Microsoft.Logic` y `Microsoft.Web` registrados.
-- **Conexiones de API:** Tras el primer `terraform apply`, se debe ingresar al portal de Azure a cada Logic App creada (`soc-l2-playbook-enrich` y `soc-l2-playbook-triage`) para validar y autorizar la conexión del conector `azuresentinel`.
+### 9. Playbooks & SOAR Requirements (`enable_sentinel_playbooks = true`)
+- **Resource Providers:** `Microsoft.Logic` and `Microsoft.Web` registered.
+- **API Connections:** After the initial `terraform apply`, open each deployed Logic App (`<prefix>-pb-enrich` and `<prefix>-pb-triage`) in the Azure portal to verify and authorize the `azuresentinel` API connection if needed.
 
-### 10. Requisitos de Seguridad y Protección del Estado de Terraform
-- **Datos Sensibles en `terraform.tfstate`:**
-  - Terraform genera localmente la clave privada SSH (`linux_ssh_private_key`) y la contraseña de Windows (`windows_admin_password`).
-  - Ambas credenciales se almacenan **en texto plano dentro del archivo de estado**. La directiva `sensitive` de Terraform solo oculta los valores en la consola, **no los cifra en el disco**.
-- **Reglas Críticas de Almacenamiento:**
-  - **NUNCA** guardar el estado en carpetas sincronizadas con servicios en la nube como OneDrive, Dropbox o Google Drive.
-  - **NUNCA** hacer commit de archivos `.tfstate`, `.tfstate.backup`, `.tfplan` ni `terraform.tfvars` en repositorios Git públicos (verificar [.gitignore](.gitignore)).
-  - **Backend Remoto Recomendado:** Para entornos de equipo o producción, configurar un backend en Azure Blob Storage con cifrado en reposo (`BlobStorage`), acceso exclusivo por RBAC, TLS 1.2+ y lease locking para proteger el estado concurrente.
+### 10. Terraform State Security Requirements
+- **Sensitive Data in `terraform.tfstate`:**
+  - Terraform locally generates the SSH private key (`linux_ssh_private_key`), Windows password (`windows_admin_password`), and DSRM password (`dsrm`).
+  - All generated credentials are stored **in cleartext inside the state file**. Marking outputs `sensitive` only redacts console output; **it does not encrypt state on disk**.
+- **Critical Storage Rules:**
+  - **NEVER** store state files in cloud-synced folders such as OneDrive, Dropbox, or Google Drive.
+  - **NEVER** commit `.tfstate`, `.tfstate.backup`, `.tfplan`, or `terraform.tfvars` files to Git repositories (verify [.gitignore](.gitignore)).
+  - **Recommended Remote Backend:** Configure an Azure Blob Storage backend with encryption at rest, exclusive RBAC authorization, TLS 1.2+, and blob lease locking.
 
-## Costos y límites del laboratorio
+## Lab Costs and Limits
 
-**Presupuesto no confirmado. No hay una cotización validada para esta suscripción.** Antes de aprobar el despliegue, calcular horas de ejecución y tarifas regionales de:
+**Unconfirmed budget. No validated cost estimate exists for this subscription.** Before approving deployment, calculate expected runtime hours and regional pricing for:
 
-- Dos VM D2s_v6, licencia Windows y discos administrados Standard.
-- Dos nodos AKS D4s_v6, discos de nodos, Load Balancer, IP de salida y posible nodo temporal durante operaciones.
-- Dos IP públicas de VM y tráfico de red.
-- App Service B1 (se factura el plan aunque no haya aplicación).
-- Key Vault Standard, operaciones, Private Endpoint (horas y datos) y zona/consultas de DNS privado.
-- Ingesta y retención Log Analytics/Microsoft Sentinel. Azure Activity puede tener condiciones de ingesta gratuita; verificarlas en el modelo de precios de la suscripción.
+- Two D2s_v6 VMs, Windows Server license, and Standard managed disks.
+- Two D4s_v6 AKS nodes, node OS disks, Standard Load Balancer, outbound public IP, and temporary surge node during upgrades.
+- Two static Standard VM public IPs and network egress.
+- App Service B1 plan (billed while provisioned, even without a deployed app).
+- Key Vault Standard, secret operations, Private Endpoint (hourly + data processed), and Private DNS zone/queries.
+- Log Analytics / Microsoft Sentinel ingestion and retention. Azure Activity may qualify for free ingestion tiers; verify against your subscription's pricing model.
 
-El umbral diario de 1 GB **no es un límite de facturación garantizado**: puede superarse y no aplica igual a todos los tipos de datos. Al alcanzarse puede perderse telemetría y cobertura de detección. Los logs de autenticación y de AKS pueden producir mucho volumen. Se recoge `kube-audit-admin`, no `kube-audit` completo, para reducir ruido; las lecturas de API no quedan cubiertas por esa auditoría filtrada.
+The 1 GB daily cap **is not a guaranteed billing ceiling**: overages can occur and the cap does not apply uniformly across all billing categories. Once reached, telemetry ingestion stops until the next reset, creating detection blind spots. Authentication and AKS logs can generate significant volume. `kube-audit-admin` is collected instead of full `kube-audit` to reduce noise; read-only API calls (`get`/`list`) are excluded from that filtered audit stream.
 
-Crear un presupuesto/alertas de Cost Management antes de desplegar es una recomendación, no un recurso incluido. No asumir que detener las VM elimina costos: discos, IP, App Service y otros recursos pueden seguir facturando. Revisar también el grupo administrado `MC_` de AKS.
+Creating an Azure Cost Management budget and alerts prior to deployment is recommended (not provisioned by this code). Do not assume stopping VMs eliminates all charges: disks, public IPs, App Service plans, AKS nodes, and Private Endpoints continue billing. Always check the AKS managed `MC_` resource group as well.
 
-## Uso local y despliegue manual
+## Local Usage and Manual Deployment
 
-Ejecutar desde este directorio. Los pasos de despliegue siguientes son instrucciones para una ejecución futura autorizada; no se ejecutaron al crear el código.
+Run commands from this directory (`Terraform/`). The deployment steps below are instructions for an authorized future execution.
 
-### Validación sin Azure
+### Offline Validation (No Azure Access Required)
 
 ```powershell
 terraform init -backend=false -input=false
@@ -368,200 +368,198 @@ terraform validate
 terraform test
 ```
 
-Las pruebas usan proveedores mock y `command = plan`: no requieren login ni crean recursos. Validan el perfil, acceso, asociaciones de agentes/DCR, destino único de telemetría, generación/cableado de claves, red/RBAC de Key Vault y acceso HTTPS directo a App Service, además del rechazo de entradas peligrosas. No validan las API de Azure ni la ingesta real.
+Tests use mock providers and `command = plan`: they require no Azure login and create no cloud resources. They verify SKU profiles, network access rules, agent/DCR associations, single telemetry destination, key generation/wiring, Key Vault network/RBAC controls, direct HTTPS access on App Service, and rejection of unsafe inputs. They do not validate live Azure APIs or actual log ingestion.
 
-### Preparar entradas
+### Prepare Inputs
 
-Editar [terraform.tfvars](terraform.tfvars), que contiene explícitamente todos los SKU y tamaños: VM Linux/Windows, imágenes y discos de sistema, nivel/nodos/SO/balanceador de AKS, App Service, Key Vault, Log Analytics e IP públicas. Se mantienen los valores actuales; las variables conservan sus valores predeterminados para otros archivos de entradas. Los SKU de imágenes deben pertenecer al publisher/offer configurado en [compute.tf](compute.tf); cambiarlos puede reemplazar las VM. Ubuntu en AKS, balanceador Standard, IP públicas Standard y workspace PerGB2018 están restringidos mediante validación al perfil soportado. Otros cambios de SKU requieren comprobar compatibilidad, cuota, disponibilidad y costos, y revisar el plan antes de aplicar.
+Edit [terraform.tfvars](terraform.tfvars), which explicitly sets all SKUs and sizes: Linux/Windows VMs, OS images and disks, AKS tier/nodes/OS/load balancer, App Service, Key Vault, Log Analytics, and public IPs. Variable defaults remain intact for alternative `.tfvars` files. Image SKUs must belong to the publisher/offer configured in [compute.tf](compute.tf); changing them may replace VMs. Ubuntu on AKS, Standard load balancer, Standard public IPs, and `PerGB2018` workspace SKU are enforced via variable validation. Any other SKU changes require checking compatibility, quota, regional availability, and cost, then reviewing the plan before applying.
 
-Verificar la suscripción, la identidad autenticada y que `admin_source_cidr` identifique la salida pública real del ejecutor (por ejemplo, una IP con `/32`). Ya no existen las variables `aks_admin_object_id` ni `linux_ssh_public_key`: quitarlas de cualquier `.tfvars` anterior; los roles se asignan al ejecutor y la clave se genera durante el despliegue autorizado.
+Verify the target subscription, authenticated identity, and that `admin_source_cidr` matches the operator's real public egress IP (e.g., `/32`). Legacy variables `aks_admin_object_id` and `linux_ssh_public_key` no longer exist: remove them from any older `.tfvars` files; roles are assigned to the caller and the SSH key pair is generated during deployment.
 
-Si ya existe una VM con una clave propia, revisar el cambio de clave en el plan y conservar el acceso anterior hasta completar la transición. La generación TLS permanece estable mientras se conserve el estado; reemplazar el recurso TLS rota la clave y requiere revisar cómo AzureRM aplicará el cambio a la VM.
+If a VM already exists with an older SSH key, inspect key changes in the plan and retain existing access until transition completes. TLS key generation stays stable as long as Terraform state is preserved; replacing `tls_private_key` rotates the key pair.
 
-No colocar secretos en este directorio sincronizado con OneDrive. **Antes de plan/apply configurar un backend remoto aprobado con cifrado, RBAC, bloqueo y acceso restringido**, o ejecutar desde una ubicación local no sincronizada y protegida. Por defecto Terraform usaría estado local: este repositorio no crea ni presupone un backend. Conservar `.terraform.lock.hcl`; excluir estados, planes y archivos `.tfvars` de cualquier repositorio.
+Do not store secrets in a OneDrive-synced directory. **Before running `plan`/`apply`, configure an approved remote backend with encryption, RBAC, state locking, and restricted access**, or run from a protected, non-synced local path. By default Terraform uses local state; this repository neither creates nor assumes a remote backend. Keep `.terraform.lock.hcl`; exclude state files, saved plans, and `.tfvars` from version control.
 
-### Autenticar, planificar y revisar
+### Authenticate, Plan, and Review
 
-Una vez preparado el backend elegido y confirmados presupuesto/permisos:
+Once your backend is ready and budget/permissions are confirmed:
 
 ```powershell
 az login
 az account set --subscription "<subscription-id>"
 terraform init
 terraform validate
-if ($LASTEXITCODE -ne 0) { throw "terraform validate fallo" }
+if ($LASTEXITCODE -ne 0) { throw "terraform validate failed" }
 terraform plan -out=lab.tfplan
-if ($LASTEXITCODE -ne 0) { throw "terraform plan fallo" }
+if ($LASTEXITCODE -ne 0) { throw "terraform plan failed" }
 ```
 
-Revisar el plan y aprobar explícitamente el costo y las modificaciones. El plan guardado contiene datos sensibles; protegerlo y eliminarlo tras su uso. Solo entonces ejecutar manualmente:
+Inspect the plan carefully and explicitly approve expected costs and resource changes. Saved `.tfplan` files contain sensitive values; protect them and delete them after use. Only then apply manually:
 
 ```powershell
 terraform apply .\lab.tfplan
 terraform output
 ```
 
-No usar `-auto-approve`. Para AKS, instalar `kubectl` y `kubelogin`, autenticarse como la identidad autorizada y obtener credenciales de usuario:
+Never use `-auto-approve`. For AKS access, install `kubectl` and `kubelogin`, authenticate as the authorized identity, and fetch user credentials:
 
 ```powershell
-az aks get-credentials --resource-group "<prefijo>-rg" --name "<prefijo>-aks"
+az aks get-credentials --resource-group "<prefix>-rg" --name "<prefix>-aks"
 kubelogin convert-kubeconfig -l azurecli
 kubectl get nodes
 ```
 
-No se exportan kubeconfig, contraseñas ni claves del workspace como outputs. La privada SSH sí tiene un output explícito sensible: `linux_ssh_private_key`. Para usar SSH, exportarla con `terraform output -raw linux_ssh_private_key` exclusivamente a un archivo protegido fuera de OneDrive, sin mostrarla en chats, logs ni repositorios; limitar sus permisos al usuario administrador. No es posible recuperarla desde Key Vault porque allí se almacena solo la pública. Las pruebas mock no generan un par real.
+Kubeconfigs, passwords, and workspace shared keys are not exported as outputs. The generated SSH private key has a dedicated sensitive output: `linux_ssh_private_key`. To connect via SSH, export it with `terraform output -raw linux_ssh_private_key` exclusively to a protected file outside OneDrive—never paste it into chats, logs, or repositories—and restrict file ACLs to your user account. It cannot be retrieved from Key Vault because Key Vault stores only the public key. Mock tests do not generate real keys.
 
-## Operación de Key Vault
+## Key Vault Operations
 
-- La contraseña Windows ya no es una entrada: retirar `windows_admin_password` de `.tfvars` anteriores y dejar de usar `TF_VAR_windows_admin_password`. Se genera al aplicar y se mantiene estable mientras no se reemplace `random_password.windows_admin`. No se utiliza `timestamp()` ni una rotación automática en cada apply.
-- Para RDP, consultar `windows-admin-password` en Key Vault con una identidad autorizada desde la red permitida, preferentemente mediante el portal sin copiarla a logs o archivos. Terraform exporta únicamente `windows_admin_password_secret_id`, no el valor de la contraseña.
-- Si la VM ya existe, el primer plan de esta migración cambiará su contraseña; revisar y autorizar el cambio. No rotar el secreto por separado: para una rotación futura, planificar el reemplazo de `random_password.windows_admin` y revisar que la VM y el secreto se actualicen juntos. Guardar un secreto no modifica por sí solo la contraseña del sistema operativo. Si apply falla parcialmente, verificar qué pasos se completaron y reconciliar VM y vault antes de usar RDP.
-- El ejecutor de Terraform recibe `Key Vault Secrets Officer` únicamente sobre este vault, para crear y mantener los secretos. Es la misma identidad que recibe administración RBAC de AKS, sin introducir un Object ID manual. El CIDR autoriza red, **no identidad**. Otros usuarios necesitan roles de datos explícitos; no se concede acceso de secretos a las VM automáticamente.
-- Ejecutar plan/apply/refresh/destroy desde `admin_source_cidr` o desde una red con acceso al Private Endpoint y resolución DNS privada. Agentes CI con otra IP serán bloqueados. El acceso al plano ARM no garantiza acceso al plano de datos de secretos.
-- El RBAC recién creado puede tardar en propagarse. Si Azure responde 403, revisar el error: `ForbiddenByFirewall` requiere corregir red/DNS/origen; una denegación RBAC requiere revisar identidad/rol y su propagación. Reintentar tras confirmar la causa, sin abrir el firewall ni introducir esperas ciegas.
-- Consultar solo la pública después del despliegue con `az keyvault secret show --vault-name "<prefijo>-kv01" --name linux-ssh-public-key --query value -o tsv` (o usar el output `key_vault_name`). Dentro de la VNet, `Resolve-DnsName "<prefijo>-kv01.vault.azure.net"` debe resolver a la IP del output `key_vault_private_ip`. No se crea una VPN para el administrador.
-- El nombre `${name_prefix}-${key_vault_name_suffix}` (por defecto `kv01`) debe ser globalmente único y cumplir las restricciones de Azure Key Vault (incluida la ausencia de guiones consecutivos); ajustar el prefijo o el sufijo si existe conflicto.
-- Soft delete de 7 días está activo, pero purge protection está **deshabilitado** a propósito: `terraform destroy` purga los secretos y el vault, que dejan de ser recuperables y liberan el nombre de inmediato. Purge protection no puede desactivarse después de habilitarlo (el provider falla con *once Purge Protection has been Enabled it's not possible to disable it*).
-- **Migración desde despliegues anteriores:** la primera versión creó `<prefijo>-kv` con purge protection. Ese vault nunca podrá purgarse. El cambio a `<prefijo>-kv01` hace que el siguiente `apply` lo **reemplace**: crea un vault nuevo sin protección, vuelve a escribir los secretos, el Private Endpoint, el rol y el diagnóstico, y borra el antiguo. El provider omite la purga del vault protegido y de sus secretos; Azure los elimina al cumplirse los 7 días. Revisar ese reemplazo en el plan antes de aplicarlo. Desde entonces, destroy elimina el vault por completo.
-- Auditoría hacia el mismo workspace de Sentinel: consultar `AZKVAuditLogs | where TimeGenerated > ago(30m)`. Verificar generación e ingesta real después del despliegue.
+- The Windows password is no longer an input variable: remove `windows_admin_password` from older `.tfvars` files and unset `TF_VAR_windows_admin_password`. It is generated on `apply` and remains stable unless `random_password.windows_admin` is replaced. Neither `timestamp()` nor automatic per-apply rotation is used.
+- For RDP access, retrieve `windows-admin-password` from Key Vault using an authorized identity from the allowed network, preferably via the Azure portal without copying it into logs or files. Terraform exports only `windows_admin_password_secret_id`, never the password value.
+- If migrating an existing VM, the first plan will update its password; review and approve the change. Do not rotate the Key Vault secret independently: to rotate later, plan a replacement of `random_password.windows_admin` so both the VM and secret update together. Updating a Key Vault secret alone does not change the guest OS password. If `apply` fails midway, check which resources succeeded and reconcile the VM and vault before attempting RDP.
+- The identity running Terraform receives `Key Vault Secrets Officer` scoped strictly to this vault to create and manage secrets. It is the same caller identity granted AKS cluster admin RBAC, avoiding manual Object ID inputs. Network CIDR rules authorize network reachability, **not identity**. Other operators require explicit data-plane RBAC roles; VMs are not granted secret access automatically.
+- Run `plan`/`apply`/`refresh`/`destroy` from `admin_source_cidr` or from a network with Private Endpoint connectivity and Private DNS resolution. CI runners on other public IPs will be blocked by the vault firewall. Control-plane ARM access does not grant secret data-plane access.
+- Newly created RBAC assignments take time to propagate. If Azure returns `403`, inspect the error code: `ForbiddenByFirewall` indicates a source IP / DNS mismatch; RBAC denial indicates identity/role propagation delay. Retry once confirmed rather than opening the firewall or adding blind sleeps.
+- Query only the public SSH key post-deployment if needed: `az keyvault secret show --vault-name "<prefix>-kv01" --name linux-ssh-public-key --query value -o tsv` (or via output `key_vault_name`). From inside the VNet, `Resolve-DnsName "<prefix>-kv01.vault.azure.net"` resolves to `key_vault_private_ip`. No admin VPN is provisioned.
+- Vault name `${name_prefix}-${key_vault_name_suffix}` (`kv01` by default) must be globally unique and satisfy Azure Key Vault naming rules (including no consecutive hyphens); adjust `name_prefix` or `key_vault_name_suffix` on collision.
+- 7-day soft delete is enabled, while **purge protection is intentionally disabled**: `terraform destroy` purges secrets and the vault immediately, releasing the name. Once enabled on a vault, purge protection cannot be disabled (*once Purge Protection has been Enabled it's not possible to disable it*).
+- **Migration from earlier deployments:** the earliest version created `<prefix>-kv` with purge protection enabled. Switching to `<prefix>-kv01` causes the next `apply` to **replace** it: creating a new vault without purge protection, rewriting secrets, Private Endpoint, role assignment, and diagnostics, and deleting the old vault (which Azure purges after the 7-day retention period). Review that replacement in the plan before applying.
+- Vault audit events flow to the shared Sentinel workspace: query `AZKVAuditLogs | where TimeGenerated > ago(30m)`. Verify actual generation and ingestion after deployment.
 
-## Verificación operativa después de un despliegue autorizado
+## Post-Deployment Operational Verification
 
-> Generación automática de actividad: [Invoke-SocLabLogGeneration.ps1](scripts/Invoke-SocLabLogGeneration.ps1) ejecuta las pruebas P02–P15 de la [guía de cobertura](docs/Sentinel-Cobertura-y-pruebas.md). Terraform la lanza al final del apply con `enable_log_generation` ([detalle](#generación-de-logs-al-final-del-despliegue)), o puede ejecutarse a mano. Usa `-WhatIf` para revisar el alcance sin generar actividad.
+> Automated benign activity: [Invoke-SocLabLogGeneration.ps1](scripts/Invoke-SocLabLogGeneration.ps1) executes tests P02–P15 from the [Sentinel coverage guide](docs/Sentinel-Coverage-and-Testing.md). Terraform triggers it at the end of `apply` when `enable_log_generation = true` ([details](#log-generation-at-the-end-of-deployment)), or you can run it manually. Pass `-WhatIf` to preview scope without generating activity.
 
-1. Comprobar ambas extensiones AMA con estado satisfactorio y la asociación de cada DCR. En Ubuntu comprobar `cloud-init status --wait` y `systemctl status rsyslog`.
-2. Hacer un acceso administrativo normal autorizado a cada VM. Algunos eventos Windows, por ejemplo 4688, requieren habilitar previamente la política de auditoría correspondiente; incluirlos en un XPath no habilita esa auditoría ni instala Sysmon.
-3. Acceder al endpoint HTTPS de App Service. Sin aplicación propia no se esperan logs de negocio y puede no haber logs de consola. No interpretar el endpoint aprovisionado como aplicación desplegada.
-4. Comprobar nodos y pods de monitoreo AKS. No hay workloads de usuario: `ContainerLogV2` dependerá de contenedores que emitan stdout/stderr y de la configuración del agente. Inventario/eventos se recogen con intervalo de 5 minutos; no es un límite de gasto ni una tasa universal de logs.
-5. Abrir los Logs del workspace de Sentinel y, después del tiempo de ingesta, ejecutar cada consulta de forma independiente:
+1. Confirm both AMA extensions show `Succeeded` and verify each DCR association. On Ubuntu, check `cloud-init status --wait` and `systemctl status rsyslog`.
+2. Perform normal authorized administrative logins to each VM. Certain Windows events (such as 4688) require guest audit policy configuration; listing an Event ID in a DCR XPath query neither enables guest auditing nor installs Sysmon.
+3. Access the App Service HTTPS endpoint. Without a deployed app, no application logs are expected and console logs may remain empty. Provisioning the endpoint does not deploy web application code.
+4. Check AKS nodes and monitoring pods. Without user workloads, `ContainerLogV2` depends on containers writing to stdout/stderr and agent filtering settings. Pod inventory and events collect at 5-minute intervals.
+5. Open Sentinel Logs and, after allowing for ingestion latency, run each query independently:
 
 ```kusto
 Heartbeat
 | where TimeGenerated > ago(30m)
-| summarize Ultimo=max(TimeGenerated) by Computer, OSType
+| summarize Latest=max(TimeGenerated) by Computer, OSType
 ```
 
 ```kusto
 Syslog
 | where TimeGenerated > ago(30m)
-| summarize Eventos=count(), Ultimo=max(TimeGenerated) by Computer, Facility
+| summarize Events=count(), Latest=max(TimeGenerated) by Computer, Facility
 ```
 
 ```kusto
 SecurityEvent
 | where TimeGenerated > ago(30m)
-| summarize Eventos=count() by Computer, EventID
+| summarize Events=count() by Computer, EventID
 ```
 
 ```kusto
 Event
 | where TimeGenerated > ago(30m)
-| summarize Eventos=count() by Computer, EventLog
+| summarize Events=count() by Computer, EventLog
 ```
 
 ```kusto
 AppServiceHTTPLogs
 | where TimeGenerated > ago(30m)
-| summarize Solicitudes=count() by _ResourceId
+| summarize Requests=count() by _ResourceId
 ```
 
 ```kusto
 KubePodInventory
 | where TimeGenerated > ago(30m)
-| summarize Ultimo=max(TimeGenerated) by ClusterName, Namespace
+| summarize Latest=max(TimeGenerated) by ClusterName, Namespace
 ```
 
 ```kusto
 ContainerLogV2
 | where TimeGenerated > ago(30m)
-| summarize Registros=count() by PodNamespace, PodName
+| summarize Records=count() by PodNamespace, PodName
 ```
 
 ```kusto
 AKSAuditAdmin
 | where TimeGenerated > ago(30m)
-| summarize Operaciones=count() by _ResourceId
+| summarize Operations=count() by _ResourceId
 ```
 
 ```kusto
 AKSControlPlane
 | where TimeGenerated > ago(30m)
-| summarize Registros=count() by Category
+| summarize Records=count() by Category
 ```
 
 ```kusto
 AzureActivity
 | where TimeGenerated > ago(1h)
-| summarize Operaciones=count() by CategoryValue, ResourceGroup
+| summarize Operations=count() by CategoryValue, ResourceGroup
 ```
 
-Una tabla puede no existir hasta recibir el primer registro; una consulta vacía o con error de tabla inexistente **no confirma** que la integración funcione. Revisar generación de eventos, salida de red, identidad, DCR/asociación, diagnósticos, cuota diaria y latencia. La habilitación de Sentinel no crea detecciones: esa configuración requiere otro alcance.
+Custom/dedicated tables may not exist until the first record is ingested; an empty result or missing-table error **does not confirm** healthy integration. Check event generation, network egress, managed identity, DCR associations, diagnostic settings, daily cap, and ingestion latency. Base Sentinel onboarding alone creates no detections unless `enable_sentinel_analytics` or custom rules are enabled.
 
-### Retirada de Application Gateway y WAF
+### Removal of Application Gateway and WAF
 
-Por decisión del usuario, el stack ya no incluye Application Gateway, política WAF, su subred dedicada, NSG, IP pública ni diagnóstico. App Service vuelve al acceso público directo por HTTPS, sin protección WAF; SCM/Kudu deja de heredar la restricción a la subred retirada. Se conservan TLS mínimo 1.2 y autenticación básica de publicación deshabilitada.
+By user decision, the stack no longer includes Application Gateway, WAF policy, dedicated gateway subnet, NSG, public IP, or WAF diagnostics. App Service uses direct public HTTPS access without WAF protection; SCM/Kudu no longer inherits restrictions from the removed subnet. Minimum TLS 1.2 and disabled basic publishing authentication remain enforced.
 
-Si estos recursos ya se desplegaron y siguen en el estado, generar y revisar un plan nuevo: Terraform propondrá eliminarlos y actualizar las restricciones de App Service. No usar `terraform destroy`, porque eliminaría todo el laboratorio, ni quitar recursos del estado manualmente. El retiro en Azure solo ocurre al aplicar el plan autorizado y puede interrumpir conexiones existentes. Usar el output `app_service_url` como endpoint. No reutilizar planes guardados anteriores.
+If those resources were previously deployed and remain in Terraform state, generate and inspect a fresh plan: Terraform will propose destroying them and updating App Service access restrictions. Do not run `terraform destroy` (which destroys the entire lab) or manually manipulate state. Use output `app_service_url` as the endpoint, and discard stale saved plans.
 
-### Container Insights: identidad vacía del complemento
+### Container Insights: Empty Add-on Identity
 
-Con `msi_auth_for_monitoring_enabled = true`, Azure puede devolver `oms_agent_identity = []`. No se debe indexar esa lista ni asignar el rol `Monitoring Metrics Publisher` al complemento: la [autenticación administrada de Container Insights](https://learn.microsoft.com/azure/azure-monitor/containers/container-insights-authentication) ya no requiere ese rol. El agente conserva el workspace configurado y la DCR/asociación explícita; la asociación depende del clúster por su `target_resource_id`.
+With `msi_auth_for_monitoring_enabled = true`, Azure may return `oms_agent_identity = []`. Do not index into that list or assign `Monitoring Metrics Publisher` to the add-on: [Container Insights managed identity authentication](https://learn.microsoft.com/azure/azure-monitor/containers/container-insights-authentication) does not use that role. The add-on uses the configured workspace and explicit DCR association (`target_resource_id` referencing the cluster).
 
-Si un apply anterior falló con `Invalid index` en `aks_monitor`, generar un plan nuevo y revisarlo antes de aplicar; no reutilizar un plan guardado anterior. No es necesario recrear el clúster ni deshabilitar el monitoreo por este error. Verificar después la ingesta con las consultas anteriores.
+If a prior `apply` failed with `Invalid index` on `aks_monitor`, generate a fresh plan and review before applying; never reuse an old saved plan. Recreating the cluster or disabling monitoring is unnecessary.
 
-## Retirada
+## Teardown
 
-Solo tras autorización y conservación de cualquier evidencia necesaria:
+Only after explicit authorization and preserving any required investigation evidence:
 
 ```powershell
 terraform plan -destroy -out=destroy.tfplan
 terraform apply .\destroy.tfplan
 ```
 
-La planificación de destrucción también necesita las variables obligatorias; la contraseña ya no se introduce manualmente.
+Destroy plans still require mandatory input variables; passwords are not entered manually.
 
-La destrucción es **permanente** por configuración del bloque `features` en [providers.tf](providers.tf):
+Destruction is **permanent** due to the `features` configuration in [providers.tf](providers.tf):
 
-| Recurso | Comportamiento en destroy |
+| Resource | Behavior on `destroy` |
 |---|---|
-| Secretos de Key Vault | Se borran y se purgan (`purge_soft_deleted_secrets_on_destroy`). |
-| Key Vault | Se borra y se purga (`purge_soft_delete_on_destroy`); requiere `purge_protection_enabled = false`. |
-| Workspace de Log Analytics y Sentinel | Borrado permanente sin la retención de recuperación de 14 días (`permanently_delete_on_destroy`); los datos se pierden. |
-| Discos de SO de las VM | Se eliminan con la VM (`delete_os_disk_on_deletion`). |
-| AKS (incluido el grupo `MC_`), App Service, red, IPs, DNS privada, DCR, diagnósticos, roles y clave SSH | Se eliminan; no tienen soft delete. |
+| Key Vault secrets | Deleted and purged (`purge_soft_deleted_secrets_on_destroy`). |
+| Key Vault | Deleted and purged (`purge_soft_delete_on_destroy`); requires `purge_protection_enabled = false`. |
+| Log Analytics Workspace & Sentinel | Permanently deleted without the 14-day recovery window (`permanently_delete_on_destroy`); all data is lost. |
+| VM OS Disks | Deleted alongside VMs (`delete_os_disk_on_deletion`). |
+| AKS (including `MC_` group), App Service, VNet, IPs, Private DNS, DCRs, diagnostics, roles, and SSH key | Deleted immediately (no soft delete). |
 
-`recover_soft_deleted_*` está deshabilitado: si existe un vault o secreto borrado con el mismo nombre, `apply` falla en lugar de recuperarlo. Si se ejecuta destroy **antes** de aplicar la migración a `kv01`, el vault antiguo `<prefijo>-kv`, que tiene purge protection, quedará 7 días en soft delete sin poder purgarse. Requisitos para purgar:
+`recover_soft_deleted_*` is disabled: if a soft-deleted vault or secret with the same name exists, `apply` fails rather than silently recovering it. Requirements for clean purge during destroy:
 
-- La identidad que ejecuta Terraform necesita `Microsoft.KeyVault/locations/deletedVaults/purge/action` a nivel de **suscripción** (p. ej. Contributor/Key Vault Contributor); un rol limitado al grupo de recursos no basta. La purga de secretos la cubre `Key Vault Secrets Officer`, que Terraform retira después de los secretos.
-- Ejecutar destroy desde `admin_source_cidr` o la red privada, porque los secretos se purgan por el plano de datos.
-- El grupo de recursos conserva `prevent_deletion_if_contains_resources` por defecto: si alguien creó recursos fuera de Terraform (p. ej. reglas de Sentinel desde el portal), destroy fallará al borrar el grupo en vez de eliminarlos sin control; eliminarlos o importarlos antes de reintentar. El diagnóstico de suscripción creado por este stack se elimina; no se deben modificar diagnósticos de terceros. Proteger y borrar de forma controlada los planes usados.
+- The identity running Terraform requires `Microsoft.KeyVault/locations/deletedVaults/purge/action` at **subscription** scope (e.g., `Contributor` or `Key Vault Contributor`); resource-group scope alone is insufficient. Secret purge is covered by `Key Vault Secrets Officer`, which Terraform destroys after purging secrets.
+- Run `destroy` from `admin_source_cidr` or the private network because secret purge is a data-plane operation.
+- Note that `prevent_deletion_if_contains_resources = false` is configured on the provider's `resource_group` feature block so unmanaged portal artifacts inside the lab group do not block teardown; verify group contents before destroying. Subscription-level diagnostic settings created by this stack are removed without touching third-party diagnostics. Securely delete saved `.tfplan` files afterward.
 
-## Referencias verificadas para el diseño
+## Verified Design References
 
-- [Investigación de infraestructura](../Research/Infraestructura%20Azure%20Con%20Terraform.md).
-- [Investigación de Sentinel](../Research/Configurar%20Sentinel%20Terraform%20y%20Notebooks.md).
 - [AzureRM 5.10: AKS](https://registry.terraform.io/providers/hashicorp/azurerm/5.10.0/docs/resources/kubernetes_cluster).
 - [AzureRM 5.10: DCR](https://registry.terraform.io/providers/hashicorp/azurerm/5.10.0/docs/resources/monitor_data_collection_rule).
-- [AzureRM: onboarding de Sentinel](https://registry.terraform.io/providers/hashicorp/azurerm/5.10.0/docs/resources/sentinel_log_analytics_workspace_onboarding).
-- [Requisitos de pools de sistema AKS](https://learn.microsoft.com/azure/aks/use-system-pools).
-- [Habilitar monitoreo de AKS](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-monitoring-enable).
-- [Ejemplo oficial Terraform de Container Insights con MSI y DCR](https://github.com/microsoft/Docker-Provider/blob/ci_prod/scripts/onboarding/aks/onboarding-msi-terraform/main.tf).
-- [Límite diario de Log Analytics](https://learn.microsoft.com/azure/azure-monitor/logs/daily-cap).
-- [Calculadora de precios Azure](https://azure.microsoft.com/pricing/calculator/).
+- [AzureRM: Sentinel onboarding](https://registry.terraform.io/providers/hashicorp/azurerm/5.10.0/docs/resources/sentinel_log_analytics_workspace_onboarding).
+- [AKS system node pool requirements](https://learn.microsoft.com/azure/aks/use-system-pools).
+- [Enable AKS monitoring](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-monitoring-enable).
+- [Official Container Insights MSI + DCR Terraform example](https://github.com/microsoft/Docker-Provider/blob/ci_prod/scripts/onboarding/aks/onboarding-msi-terraform/main.tf).
+- [Log Analytics daily cap](https://learn.microsoft.com/azure/azure-monitor/logs/daily-cap).
+- [Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/).
 - [AzureRM: SSH public key](https://registry.terraform.io/providers/hashicorp/azurerm/5.10.0/docs/resources/ssh_public_key).
-- [TLS: generación de clave privada y persistencia en estado](https://registry.terraform.io/providers/hashicorp/tls/4.4.2/docs/resources/private_key).
-- [Random: contraseña generada y persistencia en estado](https://registry.terraform.io/providers/hashicorp/random/3.9.1/docs/resources/password).
+- [TLS: private key generation and state persistence](https://registry.terraform.io/providers/hashicorp/tls/4.4.2/docs/resources/private_key).
+- [Random: generated password and state persistence](https://registry.terraform.io/providers/hashicorp/random/3.9.1/docs/resources/password).
 - [Azure Key Vault: Private Link](https://learn.microsoft.com/azure/key-vault/general/private-link-service).
-- [Categorías admitidas en diagnósticos AKS, incluida guard](https://learn.microsoft.com/azure/azure-monitor/reference/supported-logs/microsoft-containerservice-managedclusters-logs).
-- [Auditoría de procesos y exposición de argumentos 4688](https://learn.microsoft.com/windows-server/identity/ad-ds/manage/component-updates/command-line-process-auditing).
-- [auditpol: selección de subcategorías por GUID y permisos](https://learn.microsoft.com/windows-server/administration/windows-commands/auditpol-set).
+- [AKS supported diagnostic log categories, including guard](https://learn.microsoft.com/azure/azure-monitor/reference/supported-logs/microsoft-containerservice-managedclusters-logs).
+- [Command-line process auditing and Event 4688 exposure](https://learn.microsoft.com/windows-server/identity/ad-ds/manage/component-updates/command-line-process-auditing).
+- [auditpol: subcategory selection by GUID and permissions](https://learn.microsoft.com/windows-server/administration/windows-commands/auditpol-set).
 
-## Licencia y Comunidad
+## License and Community
 
-Este proyecto está distribuido bajo la licencia **GNU General Public License v3.0 (GPLv3)**. Consulta el archivo [LICENSE](LICENSE) para conocer todos los derechos y términos.
+This project is distributed under the **GNU General Public License v3.0 (GPLv3)**. See [LICENSE](LICENSE) for full rights and terms.
 
-- [Guía de Contribución](CONTRIBUTING.md)
-- [Código de Conducta](CODE_OF_CONDUCT.md)
-- [Política de Seguridad y Reporte de Vulnerabilidades](SECURITY.md)
-- [Canales de Soporte y Ayuda](SUPPORT.md)
-- [Registro de Cambios](CHANGELOG.md)
+- [Contributing Guide](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security Policy & Vulnerability Reporting](SECURITY.md)
+- [Support & Help Channels](SUPPORT.md)
+- [Changelog](CHANGELOG.md)

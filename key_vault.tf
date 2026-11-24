@@ -24,7 +24,7 @@ resource "azurerm_key_vault" "lab" {
   rbac_authorization_enabled    = true
   public_network_access_enabled = true
   soft_delete_retention_days    = 7
-  # Debe permanecer deshabilitado para que terraform destroy pueda purgar el vault.
+  # Must remain disabled so terraform destroy can purge the vault cleanly.
   purge_protection_enabled = false
   tags                     = local.tags
 

@@ -1,23 +1,23 @@
 # ==============================================================================
-# Variables de configuración del Laboratorio SOC L2 en Azure
-# Copia este archivo como 'terraform.tfvars' y completa tus valores antes de ejecutar 'terraform apply'.
+# Configuration Variables for the Azure SOC L2 Cyber Range
+# Copy this file to 'terraform.tfvars' and fill in your values before running 'terraform apply'.
 # ==============================================================================
 
-# ID de la suscripción de Azure donde se desplegarán los recursos (requerido).
+# Target Azure Subscription ID where resources will be deployed (required).
 subscription_id = "00000000-0000-0000-0000-000000000000"
 
-# Prefijo para nombrar todos los recursos del laboratorio (p. ej. "soc-l2").
+# Globally unique prefix used to name all lab resources (e.g., "soc-l2").
 name_prefix = "soc-l2"
 
-# Región de Azure para el despliegue (p. ej. "eastus2", "westeurope").
+# Target Azure region for deployment (e.g., "eastus2", "westeurope").
 location = "eastus2"
 
-# CIDR IPv4 público autorizado para SSH, RDP, AKS API y Key Vault (/24 a /32).
-# Puedes obtener tu IP pública actual visitando https://api.ipify.org
+# Approved public IPv4 CIDR for SSH, RDP, AKS API, and Key Vault (/24 to /32).
+# Check your current public IPv4 address via https://api.ipify.org
 admin_source_cidr = "203.0.113.10/32"
 
 # ------------------------------------------------------------------------------
-# Habilitación de componentes de infraestructura (true/false)
+# Optional Infrastructure Component Toggles (true/false)
 # ------------------------------------------------------------------------------
 create_app_service = true
 create_linux_vm    = true
@@ -25,59 +25,59 @@ create_windows_vm  = true
 create_aks         = true
 
 # ------------------------------------------------------------------------------
-# Configuración y aprovisionamiento con Ansible
-# Requiere que create_linux_vm y create_windows_vm sean true.
-# Instala IIS y bosque AD en Windows, Apache y PostgreSQL en Linux.
+# Guest Configuration and Service Provisioning with Ansible
+# Requires both create_linux_vm = true and create_windows_vm = true.
+# Installs IIS and an AD DS forest on Windows, plus Apache and PostgreSQL on Linux.
 # ------------------------------------------------------------------------------
 enable_ansible = true
 
-# Nombre DNS FQDN y NetBIOS para el nuevo bosque de Active Directory (AD DS) en Windows
+# DNS FQDN and NetBIOS name for the new Active Directory (AD DS) forest on Windows
 ad_domain_name    = "lab.example.test"
 ad_domain_netbios = "LAB"
 
 # ------------------------------------------------------------------------------
-# Generación de actividad benigna marcada SOC-L2-Pxx
-# Ejecuta scripts/Invoke-SocLabLogGeneration.ps1 al final del apply para poblar Sentinel.
-# Cambiar log_generation_trigger reejecuta la generación en un apply posterior.
+# Benign Marked Activity Generation (SOC-L2-Pxx)
+# Runs scripts/Invoke-SocLabLogGeneration.ps1 at the end of apply to populate Sentinel.
+# Changing log_generation_trigger re-runs log generation on a subsequent apply.
 # ------------------------------------------------------------------------------
 enable_log_generation = true
-# log_generation_trigger = "inicial"
+# log_generation_trigger = "initial"
 # log_generation_tests   = ["All"]
 
 # ------------------------------------------------------------------------------
-# Contenido de detección y automatización en Microsoft Sentinel
+# Detection, Visualization, and Automation Content in Microsoft Sentinel
 # ------------------------------------------------------------------------------
-# Reglas analíticas LAB-Pxx, regla de automatización y Workbook de visualización
+# LAB-Pxx scheduled analytic rules, hunting queries, automation rule, and workbook
 enable_sentinel_analytics = true
 
-# Playbooks (Logic Apps) para enriquecimiento y comentarios automáticos en incidentes
+# Logic App playbooks for automated incident enrichment comments and triage labels
 enable_sentinel_playbooks = true
 
-# Azure Machine Learning workspace y Compute Instance para notebooks de caza (Jupyter)
-# NOTA: La compute instance genera costos por hora mientras esté encendida.
+# Azure Machine Learning workspace and Compute Instance for Jupyter hunting notebooks
+# NOTE: The compute instance incurs hourly charges while running.
 enable_sentinel_notebooks = true
 
 # ------------------------------------------------------------------------------
-# Microsoft Defender for Servers y Defender for Endpoint (Device Inventory)
+# Microsoft Defender for Servers & Defender for Endpoint (Device Inventory)
 # ------------------------------------------------------------------------------
-# Habilita Defender for Servers (Plan 1) e instala la extensión MDE en Windows y Linux
-# para incorporar los recursos al Inventario de Dispositivos (Assets -> Devices) en Defender XDR.
+# Enables Defender for Servers (Plan 1) and deploys MDE extensions on Windows and Linux
+# so VMs onboard directly into Defender XDR Device Inventory (Assets -> Devices).
 enable_defender_for_servers = true
 defender_servers_subplan    = "P1"
 
 # ------------------------------------------------------------------------------
-# Tamaños y especificaciones de Máquinas Virtuales
+# Virtual Machine Sizes and OS Disk Specifications
 # ------------------------------------------------------------------------------
-linux_vm_size       = "Standard_D2s_v6"
-linux_image_sku     = "22_04-lts-gen2"
-linux_os_disk_sku   = "Standard_LRS"
+linux_vm_size     = "Standard_D2s_v6"
+linux_image_sku   = "22_04-lts-gen2"
+linux_os_disk_sku = "Standard_LRS"
 
 windows_vm_size     = "Standard_D2s_v6"
 windows_image_sku   = "2022-datacenter-azure-edition"
 windows_os_disk_sku = "Standard_LRS"
 
 # ------------------------------------------------------------------------------
-# Especificaciones de Azure Kubernetes Service (AKS)
+# Azure Kubernetes Service (AKS) Specifications
 # ------------------------------------------------------------------------------
 aks_sku_tier          = "Free"
 aks_node_count        = 2
@@ -86,7 +86,7 @@ aks_os_sku            = "Ubuntu"
 aks_load_balancer_sku = "standard"
 
 # ------------------------------------------------------------------------------
-# Servicios adicionales y niveles de SKU
+# Supporting Services and SKU Tiers
 # ------------------------------------------------------------------------------
 app_service_sku   = "B1"
 key_vault_sku     = "standard"

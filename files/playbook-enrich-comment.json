@@ -4,15 +4,15 @@
   "parameters": {
     "playbookName": {
       "type": "string",
-      "metadata": { "description": "Nombre del Logic App (playbook de Sentinel)." }
+      "metadata": { "description": "Name of the Logic App (Sentinel playbook)." }
     },
     "location": {
       "type": "string",
-      "metadata": { "description": "Region del playbook y su conexion." }
+      "metadata": { "description": "Azure region for the playbook and its API connection." }
     },
     "sentinelApiId": {
       "type": "string",
-      "metadata": { "description": "Resource ID del managed API azuresentinel en la region." }
+      "metadata": { "description": "Resource ID of the azuresentinel managed API in the target region." }
     }
   },
   "variables": {
@@ -41,7 +41,7 @@
       "dependsOn": [
         "[resourceId('Microsoft.Web/connections', variables('connectionName'))]"
       ],
-      "tags": { "LogicAppsCategory": "security", "hidden-SentinelTemplateName": "SOC-L2-Enriquecer" },
+      "tags": { "LogicAppsCategory": "security", "hidden-SentinelTemplateName": "SOC-L2-Enrich" },
       "properties": {
         "state": "Enabled",
         "definition": {
@@ -63,7 +63,7 @@
             }
           },
           "actions": {
-            "Agregar_comentario_al_incidente": {
+            "Add_comment_to_incident": {
               "type": "ApiConnection",
               "inputs": {
                 "host": {
@@ -73,7 +73,7 @@
                 "path": "/Incidents/Comment",
                 "body": {
                   "incidentArmId": "@triggerBody()?['object']?['id']",
-                  "message": "<p><strong>SOC-L2 Lab</strong> &mdash; incidente <b>@{triggerBody()?['object']?['properties']?['title']}</b> (severidad @{triggerBody()?['object']?['properties']?['severity']}).</p><p>Enriquecimiento automatico del taller. Revisa el workbook <i>SOC L2 Lab - Eventos de seguridad generados</i> y el notebook de caza para correlacionar los marcadores <code>SOC-L2-Pxx</code>.</p>"
+                  "message": "<p><strong>SOC-L2 Lab</strong> &mdash; incident <b>@{triggerBody()?['object']?['properties']?['title']}</b> (severity @{triggerBody()?['object']?['properties']?['severity']}).</p><p>Automated workshop enrichment. Open workbook <i>SOC L2 Lab - Generated Security Events</i> and the hunting notebooks to correlate <code>SOC-L2-Pxx</code> markers.</p>"
                 }
               }
             }

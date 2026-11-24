@@ -4,15 +4,15 @@
   "parameters": {
     "playbookName": {
       "type": "string",
-      "metadata": { "description": "Nombre del Logic App (playbook de Sentinel)." }
+      "metadata": { "description": "Name of the Logic App (Sentinel playbook)." }
     },
     "location": {
       "type": "string",
-      "metadata": { "description": "Region del playbook y su conexion." }
+      "metadata": { "description": "Azure region for the playbook and its API connection." }
     },
     "sentinelApiId": {
       "type": "string",
-      "metadata": { "description": "Resource ID del managed API azuresentinel en la region." }
+      "metadata": { "description": "Resource ID of the azuresentinel managed API in the target region." }
     }
   },
   "variables": {
@@ -41,7 +41,7 @@
       "dependsOn": [
         "[resourceId('Microsoft.Web/connections', variables('connectionName'))]"
       ],
-      "tags": { "LogicAppsCategory": "security", "hidden-SentinelTemplateName": "SOC-L2-Etiquetar" },
+      "tags": { "LogicAppsCategory": "security", "hidden-SentinelTemplateName": "SOC-L2-Tag-Triage" },
       "properties": {
         "state": "Enabled",
         "definition": {
@@ -63,7 +63,7 @@
             }
           },
           "actions": {
-            "Actualizar_incidente": {
+            "Update_incident": {
               "type": "ApiConnection",
               "inputs": {
                 "host": {
@@ -76,7 +76,7 @@
                   "status": "Active",
                   "labels": [
                     { "labelName": "SOC-L2-Lab" },
-                    { "labelName": "Taller" }
+                    { "labelName": "Workshop" }
                   ],
                   "tagsToAdd": {
                     "TagsToAdd": [ { "Tag": "SOC-L2-Lab" } ]

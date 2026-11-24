@@ -1,12 +1,12 @@
 variable "enable_log_generation" {
-  description = "Ejecuta scripts/Invoke-SocLabLogGeneration.ps1 al final del apply para generar actividad benigna marcada en VM, App Service, Key Vault, ARM y AKS. Es una simulacion: requiere autorizacion."
+  description = "Runs scripts/Invoke-SocLabLogGeneration.ps1 at the end of apply to generate benign marked activity across VMs, App Service, Key Vault, ARM, and AKS. Requires authorization."
   type        = bool
   default     = false
   nullable    = false
 }
 
 variable "log_generation_tests" {
-  description = "Grupos de pruebas del script de generacion de logs."
+  description = "Test groups executed by the log generation script."
   type        = list(string)
   default     = ["All"]
   nullable    = false
@@ -16,52 +16,52 @@ variable "log_generation_tests" {
       for test in var.log_generation_tests :
       contains(["All", "Windows", "Linux", "WebServers", "AppService", "KeyVault", "Arm", "Aks"], test)
     ])
-    error_message = "Usa All o una lista de Windows, Linux, WebServers, AppService, KeyVault, Arm y Aks."
+    error_message = "Use All or a list containing Windows, Linux, WebServers, AppService, KeyVault, Arm, and Aks."
   }
 }
 
 variable "log_generation_wait_minutes" {
-  description = "Minutos maximos para esperar Heartbeat de las VM habilitadas y KubePodInventory de AKS si existe antes de generar actividad."
+  description = "Maximum minutes to wait for Heartbeat from enabled VMs and KubePodInventory from AKS (if present) before generating activity."
   type        = number
   default     = 30
   nullable    = false
 
   validation {
     condition     = var.log_generation_wait_minutes >= 1 && var.log_generation_wait_minutes <= 60
-    error_message = "La espera de fuentes debe estar entre 1 y 60 minutos."
+    error_message = "Source wait timeout must be between 1 and 60 minutes."
   }
 }
 
 variable "log_generation_initial_delay_seconds" {
-  description = "Espera adicional para que los diagnostic settings recien creados empiecen a exportar."
+  description = "Additional warm-up delay in seconds so newly created diagnostic settings begin exporting logs."
   type        = number
   default     = 300
   nullable    = false
 
   validation {
     condition     = var.log_generation_initial_delay_seconds >= 0 && var.log_generation_initial_delay_seconds <= 1800
-    error_message = "La espera inicial debe estar entre 0 y 1800 segundos."
+    error_message = "Initial delay must be between 0 and 1800 seconds."
   }
 }
 
 variable "log_generation_verify" {
-  description = "Consulta el workspace hasta ver cada marcador; una ingesta pendiente solo se informa, no falla el apply."
+  description = "Polls the workspace until each marker is visible; pending ingestion is reported without failing apply."
   type        = bool
   default     = true
   nullable    = false
 }
 
 variable "log_generation_trigger" {
-  description = "Valor libre; cambiarlo vuelve a ejecutar la generacion de logs en el siguiente apply."
+  description = "Arbitrary string; changing it re-runs log generation on the next apply."
   type        = string
-  default     = "inicial"
+  default     = "initial"
   nullable    = false
 }
 
 resource "terraform_data" "log_generation" {
   count = var.enable_log_generation ? 1 : 0
 
-  # Solo se reejecuta si cambia una fuente conectada, el script o el disparador manual.
+  # Re-runs only when a connected telemetry source, script, test list, or manual trigger changes.
   triggers_replace = [
     var.log_generation_trigger,
     join(",", var.log_generation_tests),
@@ -100,7 +100,7 @@ resource "terraform_data" "log_generation" {
     }
   }
 
-  # Ultimo paso del despliegue: recursos, auditoria Windows, Ansible, recoleccion y Sentinel ya existen.
+  # Final deployment step: resources, Windows auditing, Ansible, data collection, and Sentinel onboarding are ready.
   depends_on = [
     terraform_data.ansible,
     azurerm_virtual_machine_extension.linux_monitor,

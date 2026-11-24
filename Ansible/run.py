@@ -1,4 +1,4 @@
-"""Ejecuta Ansible en WSL sin persistir secretos dentro del workspace."""
+"""Runs Ansible inside WSL without persisting secrets inside the workspace."""
 
 import json
 import os
@@ -42,7 +42,7 @@ def main():
     environment = os.environ.copy()
     environment["SOC_DSRM_PASSWORD"] = request["dsrm"]
     environment["ANSIBLE_HOST_KEY_CHECKING"] = "True"
-    # Los temporales quedan en el filesystem Linux, no en OneDrive ni /mnt/c.
+    # Temporary files stay on the Linux filesystem (/tmp), never in OneDrive or /mnt/c.
     with tempfile.TemporaryDirectory(prefix="soc-ansible-", dir="/tmp") as directory:
         work = Path(directory)
         key = work / "id_rsa"

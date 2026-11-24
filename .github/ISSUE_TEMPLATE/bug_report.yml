@@ -1,69 +1,69 @@
-name: Reporte de Error (Bug Report)
-description: Reporta un error o fallo en el código de Terraform, telemetría o despliegue.
+name: Bug Report
+description: Report a bug or failure in Terraform code, Ansible automation, telemetry, or deployment.
 title: "[BUG]: "
 labels: ["bug", "triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Gracias por tomarte el tiempo de reportar este problema en el laboratorio SOC L2.
-        Por favor, asegúrate de no incluir contraseñas, tokens de Azure o información confidencial.
+        Thank you for taking the time to report this issue in the SOC L2 Cyber Range.
+        Please make sure NOT to include passwords, SSH private keys, Azure tokens, or confidential information.
   - type: input
     id: terraform_version
     attributes:
-      label: Versión de Terraform
-      description: Ejecuta `terraform version` y pega la versión aquí.
-      placeholder: "ej. Terraform v1.7.5"
+      label: Terraform Version
+      description: Run `terraform version` and paste the output here.
+      placeholder: "e.g., Terraform v1.9.0"
     validations:
       required: true
   - type: input
     id: azurerm_version
     attributes:
-      label: Versión del proveedor azurerm
-      placeholder: "ej. hashicorp/azurerm ~> 3.90"
+      label: AzureRM Provider Version
+      placeholder: "e.g., hashicorp/azurerm = 5.10.0"
     validations:
       required: false
   - type: textarea
     id: description
     attributes:
-      label: Descripción del problema
-      description: Explica de forma clara y concisa qué ocurrió.
-      placeholder: "Al ejecutar terraform plan/apply ocurre el siguiente error..."
+      label: Bug Description
+      description: Clearly and concisely describe what happened.
+      placeholder: "Running terraform plan/apply produces the following error..."
     validations:
       required: true
   - type: textarea
     id: steps_to_reproduce
     attributes:
-      label: Pasos para reproducir el comportamiento
-      description: Describe paso a paso cómo replicar el fallo.
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the failure.
       value: |
-        1. Configurar variables en terraform.tfvars
-        2. Ejecutar 'terraform init'
-        3. Ejecutar 'terraform plan' o 'terraform apply'
-        4. Observar el error
+        1. Configure variables in terraform.tfvars
+        2. Run 'terraform init'
+        3. Run 'terraform plan' or 'terraform apply'
+        4. Observe the error
     validations:
       required: true
   - type: textarea
     id: logs_or_output
     attributes:
-      label: Salida de terminal / Logs de error
-      description: Copia y pega las líneas relevantes de error de Terraform o Azure.
+      label: Terminal Output / Error Logs
+      description: Paste the relevant redacted error lines from Terraform, Ansible, or Azure CLI.
       render: shell
     validations:
       required: false
   - type: textarea
     id: expected_behavior
     attributes:
-      label: Comportamiento esperado
-      description: Qué esperabas que sucediera.
+      label: Expected Behavior
+      description: Describe what you expected to happen instead.
     validations:
       required: false
   - type: checkboxes
     id: checkboxes
     attributes:
-      label: Verificaciones previas
+      label: Pre-submission Checks
       options:
-        - label: He verificado que no estoy incluyendo secretos ni información confidencial en los logs.
+        - label: I verified that I am NOT including secrets, private keys, or confidential data in this report.
           required: true
-        - label: He buscado en los Issues existentes y no encontré un reporte duplicado.
+        - label: I searched existing Issues and confirmed this is not a duplicate report.
           required: true

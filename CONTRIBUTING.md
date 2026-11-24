@@ -1,82 +1,88 @@
-# Guía de Contribución
+**English** | [Español](CONTRIBUTING.es.md)
 
-¡Gracias por tu interés en contribuir a este laboratorio SOC L2 en Azure con Terraform! Este documento define las pautas y flujo de trabajo para colaborar en el proyecto de manera ordenada, segura y consistente.
+# Contributing Guide
 
----
-
-## Código de conducta
-
-Al participar en este proyecto, te comprometes a seguir nuestro [Código de Conducta](CODE_OF_CONDUCT.md). Por favor, trátalo con respeto y empatía hacia todos los miembros de la comunidad.
+Thank you for your interest in contributing to this Azure SOC L2 Cyber Range with Terraform! This document defines the guidelines and workflow for collaborating on the project in an orderly, secure, and consistent way.
 
 ---
 
-## ¿Cómo puedo contribuir?
+## Code of Conduct
 
-Puedes colaborar de diferentes formas:
-1. **Reportar problemas (Bugs)**: Si encuentras un fallo de sintaxis, discrepancia en los recursos o comportamiento inesperado.
-2. **Proponer mejoras (Feature Requests)**: Sugerencias de nuevas reglas analíticas de Sentinel, integración de notebooks, playbooks o configuraciones de telemetría.
-3. **Mejorar la documentación**: Corregir erratas, agregar diagramas explicativos, guías paso a paso o ejemplos de consultas KQL.
-4. **Enviar código o playbooks**: Proponer cambios en plantillas Terraform o automatizaciones de Ansible.
+By participating in this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md). Please treat all community members with respect and empathy.
 
 ---
 
-## Flujo de trabajo para Pull Requests (PR)
+## How Can I Contribute?
 
-1. **Haz un Fork** del repositorio en tu cuenta de GitHub.
-2. **Clona tu fork** localmente:
+You can contribute in several ways:
+1. **Report bugs**: If you find a syntax error, resource discrepancy, or unexpected behavior.
+2. **Propose enhancements (Feature Requests)**: Suggestions for new Sentinel analytic rules, notebook integrations, playbooks, or telemetry configurations.
+3. **Improve documentation**: Fix typos, add explanatory diagrams, step-by-step guides, or KQL query examples (keeping English `.md` and Spanish `.es.md` mirrors in sync).
+4. **Submit code or playbooks**: Propose changes to Terraform templates or Ansible automation.
+
+---
+
+## Pull Request (PR) Workflow
+
+1. **Fork** the repository to your GitHub account.
+2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/<tu-usuario>/<repositorio>.git
+   git clone https://github.com/<your-username>/<repository>.git
    cd Terraform
    ```
-3. **Crea una rama descriptiva** para tu cambio:
+3. **Create a descriptive branch** for your change:
    ```bash
-   git checkout -b feat/nueva-regla-sentinel
-   # o
-   git checkout -b fix/corregir-nsg-rdp
+   git checkout -b feat/new-sentinel-rule
+   # or
+   git checkout -b fix/rdp-nsg-rule
    ```
-4. **Realiza tus cambios** siguiendo las directrices de estilo y seguridad.
-5. **Valida tu código Terraform** localmente:
+4. **Make your changes** following the style and security guidelines below.
+5. **Validate your Terraform code** locally:
    ```bash
-   # 1. Verificar formato
-   terraform fmt -check
+   # 1. Check formatting
+   terraform fmt -check -recursive
 
-   # 2. Inicializar (backend local para validación)
+   # 2. Initialize without remote backend
    terraform init -backend=false
 
-   # 3. Validar sintaxis y referencias
+   # 3. Validate syntax and references
    terraform validate
+
+   # 4. Run mock-provider tests
+   terraform test
    ```
-6. **Haz commit de tus cambios** usando mensajes claros (se recomienda el estándar [Conventional Commits](https://www.conventionalcommits.org/)):
+6. **Commit your changes** with clear messages ([Conventional Commits](https://www.conventionalcommits.org/) recommended):
    ```bash
-   git commit -m "feat(sentinel): agregar regla analítica para detección de fuerza bruta RDP"
+   git commit -m "feat(sentinel): add analytic rule for RDP brute-force detection"
    ```
-7. **Sube tu rama y abre un Pull Request**:
-   - Detalla qué problema resuelve o qué capacidad añade.
-   - Vincula el Issue correspondiente si existe (`Closes #123`).
-   - Completa la lista de verificación provista en la plantilla de PR.
+7. **Push your branch and open a Pull Request**:
+   - Describe what problem it solves or what capability it adds.
+   - Link the corresponding Issue if applicable (`Closes #123`).
+   - Complete the checklist provided in the PR template.
 
 ---
 
-## Directrices de código y estándares Terraform
+## Code Guidelines and Terraform Standards
 
-### 1. Formato y nomenclatura
-- Ejecuta siempre `terraform fmt` antes de enviar cambios.
-- Usa snake_case para nombres de recursos, variables y outputs (ej. `vm_windows_analyst`, `enable_defender_cspm`).
-- Documenta todas las variables (`description`, `type`, y `default` cuando corresponda) en [variables.tf](variables.tf).
-- Documenta los outputs en [outputs.tf](outputs.tf).
+### 1. Formatting, Naming, and Language
+- Always run `terraform fmt -recursive` before submitting changes.
+- Use `snake_case` for resource names, variables, and outputs (e.g., `windows_vm_size`, `enable_sentinel_analytics`).
+- Write all code comments, variable `description`s, output `description`s, and test messages in **English**.
+- Document all variables (`description`, `type`, and `default` when applicable) in [variables.tf](variables.tf) (or their feature `.tf` file) and outputs in [outputs.tf](outputs.tf).
+- When updating Markdown documentation, update both the primary English `.md` file and its `.es.md` Spanish counterpart.
 
-### 2. Seguridad e Higiene de Secretos (CRÍTICO)
-- **NUNCA** hagas commit de secretos, contraseñas, claves de API, certificados o archivos `terraform.tfstate`.
-- **NUNCA** hagas commit de archivos `terraform.tfvars` con valores reales. Usa [terraform.tfvars.example](terraform.tfvars.example) para mostrar la estructura con valores de ejemplo o marcadores de posición.
-- Consulta el archivo [.gitignore](.gitignore) para asegurarte de que ningún dato sensible sea rastreado por Git.
-- Si detectas una fuga accidental de credenciales, repórtalo de inmediato siguiendo [SECURITY.md](SECURITY.md).
+### 2. Security and Secret Hygiene (CRITICAL)
+- **NEVER** commit secrets, passwords, API keys, private keys, certificates, `.tfplan`, or `terraform.tfstate` files.
+- **NEVER** commit `terraform.tfvars` files containing real environment values. Use [terraform.tfvars.example](terraform.tfvars.example) to illustrate structure with safe placeholders.
+- Check [.gitignore](.gitignore) to verify no sensitive files are tracked by Git.
+- If you spot an accidental credential leak, report it privately right away following [SECURITY.md](SECURITY.md).
 
-### 3. Responsabilidades de arquitectura
-- Mantén la infraestructura base en Terraform.
-- Las configuraciones post-despliegue de software dentro de los sistemas operativos (ej. agentes Sysmon, roles IIS/Apache) deben gestionarse con Ansible en el directorio designado.
+### 3. Architectural Responsibilities
+- Keep cloud infrastructure, identities, diagnostics, DCRs, and Sentinel resources in Terraform.
+- Post-deployment guest OS service configurations (e.g., IIS/Apache, AD DS, PostgreSQL) belong in [Ansible/](Ansible/README.md).
 
 ---
 
-## Licencia de las contribuciones
+## Contribution License
 
-Al contribuir al repositorio, aceptas que todo código y documentación entregada será distribuida bajo los términos de la licencia **GNU General Public License v3.0 (GPLv3)**. Consulta [LICENSE](LICENSE) para más detalles.
+By contributing to this repository, you agree that your code and documentation contributions will be distributed under the terms of the **GNU General Public License v3.0 (GPLv3)**. See [LICENSE](LICENSE) for details.

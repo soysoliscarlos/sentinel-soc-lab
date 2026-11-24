@@ -1,23 +1,23 @@
 variable "enable_defender_for_servers" {
-  description = "Habilita Microsoft Defender for Servers (Plan 1) y el onboarding de las VMs a Microsoft Defender for Endpoint (Device Inventory)."
+  description = "Enables Microsoft Defender for Servers (Plan 1 by default) and onboards VMs to Microsoft Defender for Endpoint (Device Inventory)."
   type        = bool
   default     = false
   nullable    = false
 }
 
 variable "defender_servers_subplan" {
-  description = "Subplan de Microsoft Defender for Servers (P1 o P2). El Plan 1 incluye licenciamiento completo de Defender for Endpoint."
+  description = "Microsoft Defender for Servers subplan (P1 or P2). Plan 1 includes full Defender for Endpoint licensing."
   type        = string
   default     = "P1"
   nullable    = false
 
   validation {
     condition     = contains(["P1", "P2"], var.defender_servers_subplan)
-    error_message = "El subplan de Defender for Servers debe ser 'P1' o 'P2'."
+    error_message = "Defender for Servers subplan must be 'P1' or 'P2'."
   }
 }
 
-# 1. Habilitar Defender for Servers a nivel de suscripcion (Plan 1 provee licenciamiento MDE para VMs)
+# 1. Enable Defender for Servers at the subscription level (Plan 1 provides MDE licensing for VMs)
 resource "azurerm_security_center_subscription_pricing" "servers" {
   count         = var.enable_defender_for_servers ? 1 : 0
   tier          = "Standard"
@@ -25,14 +25,14 @@ resource "azurerm_security_center_subscription_pricing" "servers" {
   subplan       = var.defender_servers_subplan
 }
 
-# 2. Integracion bidireccional con Microsoft Defender for Endpoint (WDATP)
+# 2. Bidirectional integration with Microsoft Defender for Endpoint (WDATP)
 resource "azurerm_security_center_setting" "wdatp" {
   count        = var.enable_defender_for_servers ? 1 : 0
   setting_name = "WDATP"
   enabled      = true
 }
 
-# 3. Extension MDE en la VM Windows para onboarding inmediato en Device Inventory
+# 3. MDE extension on the Windows VM for immediate onboarding into Device Inventory
 resource "azurerm_virtual_machine_extension" "windows_mde" {
   count = var.enable_defender_for_servers && var.create_windows_vm ? 1 : 0
 
@@ -58,7 +58,7 @@ resource "azurerm_virtual_machine_extension" "windows_mde" {
   ]
 }
 
-# 4. Extension MDE en la VM Linux para onboarding inmediato en Device Inventory
+# 4. MDE extension on the Linux VM for immediate onboarding into Device Inventory
 resource "azurerm_virtual_machine_extension" "linux_mde" {
   count = var.enable_defender_for_servers && var.create_linux_vm ? 1 : 0
 

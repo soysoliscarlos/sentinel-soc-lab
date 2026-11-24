@@ -1,7 +1,7 @@
 # Auto-detect text files and perform LF normalization on checkin
 * text=auto
 
-# Archivos de código y configuración con saltos de línea LF obligatorios
+# Code and configuration files requiring LF line endings
 *.tf text eol=lf
 *.tfvars text eol=lf
 *.sh text eol=lf
@@ -10,10 +10,10 @@
 *.json text eol=lf
 *.md text eol=lf
 
-# Scripts de PowerShell en Windows
+# Windows PowerShell scripts
 *.ps1 text eol=crlf
 
-# Archivos binarios
+# Binary files
 *.png binary
 *.jpg binary
 *.jpeg binary

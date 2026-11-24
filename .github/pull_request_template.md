@@ -1,41 +1,41 @@
-## Descripción del cambio
+## Change Description
 
-Describe brevemente los cambios introducidos en este Pull Request y la motivación detrás de ellos.
+Briefly describe the changes introduced in this Pull Request and the motivation behind them.
 
-Issue vinculado (si aplica): Closes #
-
----
-
-## Tipo de cambio
-
-Marca con una `x` las opciones aplicables:
-
-- [ ] **Corrección de error (Bug fix)**: Modificación que repara un problema sin romper compatibilidad.
-- [ ] **Nueva característica (New feature)**: Incorporación de nuevos recursos, reglas de Sentinel o telemetría.
-- [ ] **Mejora o refactorización**: Optimización de código sin alterar la funcionalidad.
-- [ ] **Actualización de documentación**: Cambios exclusivamente en guías, diagramas o comentarios.
-- [ ] **Cambio crítico (Breaking change)**: Modificación que requiere rehacer el estado o variables existentes.
+Linked Issue (if applicable): Closes #
 
 ---
 
-## Componentes afectados
+## Type of Change
 
-- [ ] Microsoft Sentinel (Reglas de alerta, Hunting, Playbooks, Notebooks)
-- [ ] Cómputo (Máquinas virtuales Windows/Linux)
-- [ ] Redes y Seguridad (VNet, Subnets, NSG, Azure Bastion)
-- [ ] Contenedores / App Services (AKS, App Service)
-- [ ] Telemetría y Agentes (Sysmon, Azure Monitor Agent, DCR)
-- [ ] Documentación y plantillas de configuración
+Mark the applicable options with an `x`:
+
+- [ ] **Bug fix**: Fixes an issue without breaking backward compatibility.
+- [ ] **New feature**: Adds new Azure resources, Sentinel rules, notebooks, playbooks, or telemetry.
+- [ ] **Enhancement / Refactor**: Improves code structure without altering functional behavior.
+- [ ] **Documentation update**: Updates Markdown guides, diagrams, or comments (keep `.md` and `.es.md` mirrors in sync).
+- [ ] **Breaking change**: Requires recreating state or updating existing input variables.
 
 ---
 
-## Lista de verificación de calidad y seguridad
+## Affected Components
 
-Antes de enviar el PR, confirma que has completado los siguientes puntos:
+- [ ] Microsoft Sentinel (Analytic rules, Hunting queries, Playbooks, Workbooks, Notebooks)
+- [ ] Compute (Windows / Linux Virtual Machines)
+- [ ] Networking & Security (VNet, Subnets, NSG, Key Vault, Defender)
+- [ ] Containers / App Services (AKS, App Service)
+- [ ] Telemetry & Guest Configuration (AMA, DCR, Ansible, Log generation scripts)
+- [ ] Documentation & Configuration templates
 
-- [ ] Mi código sigue las pautas descritas en [CONTRIBUTING.md](CONTRIBUTING.md).
-- [ ] He ejecutado `terraform fmt -check` y el formato es conforme a las convenciones de Terraform.
-- [ ] He ejecutado `terraform validate` y la sintaxis es válida.
-- [ ] **Seguridad**: He verificado que **NO** he incluido credenciales reales, contraseñas, tokens de Azure ni archivos `.tfvars` con secretos en este PR.
-- [ ] He actualizado la documentación relevante (como [README.md](README.md) o descripciones en [variables.tf](variables.tf)) si mis cambios lo requerían.
-- [ ] Entiendo y acepto que mis contribuciones se licencian bajo la licencia **GNU GPLv3**.
+---
+
+## Quality & Security Checklist
+
+Before submitting this PR, confirm that you have completed the following checks:
+
+- [ ] My code follows the guidelines in [CONTRIBUTING.md](../CONTRIBUTING.md), with all code, comments, and descriptions in English.
+- [ ] I ran `terraform fmt -check -recursive` and formatting matches Terraform conventions.
+- [ ] I ran `terraform validate` and `terraform test` and all checks pass.
+- [ ] **Security**: I verified that I have **NOT** included real credentials, passwords, SSH private keys, `.tfstate`/`.tfplan` files, or `.tfvars` with secrets in this PR.
+- [ ] I updated relevant documentation (both English `.md` and Spanish `.es.md` mirrors, plus descriptions in [variables.tf](../variables.tf)/[outputs.tf](../outputs.tf)) if required by my changes.
+- [ ] I understand and agree that my contributions are licensed under **GNU GPLv3**.
